@@ -1,7 +1,7 @@
 --[[
-    Car Flipper - Premium Automation Panel
-    Auto-open para qualquer executor
-    Versão 4.0 - Sem teclas necessárias
+    Car Flipper - Painel Completo com Todas as Opções
+    Baseado na interface do jogo
+    Versão 5.0 - UI Completa
 ]]
 
 -- ============================================================
@@ -16,19 +16,14 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 
--- ============================================================
--- 2. VERIFICAR SE O JOGO ESTÁ CARREGADO
--- ============================================================
-
 repeat task.wait() until Player and Player.Character and Player.Character:FindFirstChild("Humanoid")
-print("🚗 Car Flipper Panel Iniciando...")
+print("🚗 Car Flipper Painel Completo Iniciando...")
 
 -- ============================================================
--- 3. CRIAR UI AUTOMATICAMENTE
+-- 2. CRIAR UI PRINCIPAL
 -- ============================================================
 
 local function CreateCarFlipperUI()
-    -- ScreenGui com prioridade alta
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "CarFlipperPanel"
     ScreenGui.ResetOnSpawn = false
@@ -36,34 +31,32 @@ local function CreateCarFlipperUI()
     ScreenGui.Parent = Player.PlayerGui
     
     -- ============================================================
-    -- 4. JANELA PRINCIPAL
+    -- 3. JANELA PRINCIPAL (Tamanho maior para mais opções)
     -- ============================================================
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 420, 0, 580)
-    MainFrame.Position = UDim2.new(0.5, -210, 0.5, -290)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(16, 18, 26)
-    MainFrame.BackgroundTransparency = 0.08
+    MainFrame.Size = UDim2.new(0, 480, 0, 650)
+    MainFrame.Position = UDim2.new(0.5, -240, 0.5, -325)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(13, 15, 22)
+    MainFrame.BackgroundTransparency = 0.05
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Parent = ScreenGui
     
-    -- Efeito de blur
+    -- Efeitos visuais
     local Blur = Instance.new("BlurEffect")
-    Blur.Size = 20
+    Blur.Size = 22
     Blur.Parent = MainFrame
     
-    -- Cantos arredondados
     local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 16)
+    Corner.CornerRadius = UDim.new(0, 18)
     Corner.Parent = MainFrame
     
-    -- Borda com glow
     local Border = Instance.new("UIStroke")
     Border.Color = Color3.fromRGB(59, 130, 246)
     Border.Thickness = 1.5
-    Border.Transparency = 0.4
+    Border.Transparency = 0.3
     Border.Parent = MainFrame
     
     -- Sombra
@@ -71,89 +64,101 @@ local function CreateCarFlipperUI()
     Shadow.Size = UDim2.new(1, 20, 1, 20)
     Shadow.Position = UDim2.new(0, -10, 0, -10)
     Shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Shadow.BackgroundTransparency = 0.8
+    Shadow.BackgroundTransparency = 0.85
     Shadow.BorderSizePixel = 0
     Shadow.ZIndex = 0
     Shadow.Parent = MainFrame
     
     local ShadowCorner = Instance.new("UICorner")
-    ShadowCorner.CornerRadius = UDim.new(0, 20)
+    ShadowCorner.CornerRadius = UDim.new(0, 22)
     ShadowCorner.Parent = Shadow
     
     -- ============================================================
-    -- 5. HEADER
+    -- 4. HEADER COM INFO DO SISTEMA
     -- ============================================================
     
     local Header = Instance.new("Frame")
     Header.Name = "Header"
-    Header.Size = UDim2.new(1, 0, 0, 48)
-    Header.BackgroundColor3 = Color3.fromRGB(20, 22, 32)
+    Header.Size = UDim2.new(1, 0, 0, 54)
+    Header.BackgroundColor3 = Color3.fromRGB(18, 20, 30)
     Header.BorderSizePixel = 0
     Header.Parent = MainFrame
     
     local HeaderCorner = Instance.new("UICorner")
-    HeaderCorner.CornerRadius = UDim.new(0, 16)
+    HeaderCorner.CornerRadius = UDim.new(0, 18)
     HeaderCorner.Parent = Header
     
-    -- Título
+    -- Título com ícone
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(0.7, 0, 1, 0)
-    Title.Position = UDim2.new(0, 16, 0, 0)
+    Title.Size = UDim2.new(0.6, 0, 0.6, 0)
+    Title.Position = UDim2.new(0, 16, 0, 4)
     Title.BackgroundTransparency = 1
     Title.Text = "🚗 Car Flipper"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 18
+    Title.TextSize = 20
     Title.Font = Enum.Font.Poppins
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = Header
     
-    -- Subtítulo
-    local Subtitle = Instance.new("TextLabel")
-    Subtitle.Size = UDim2.new(0.7, 0, 1, 0)
-    Subtitle.Position = UDim2.new(0, 120, 0, 0)
-    Subtitle.BackgroundTransparency = 1
-    Subtitle.Text = "TUNING SHOP"
-    Subtitle.TextColor3 = Color3.fromRGB(128, 140, 180)
-    Subtitle.TextSize = 12
-    Subtitle.Font = Enum.Font.Poppins
-    Subtitle.TextXAlignment = Enum.TextXAlignment.Left
-    Subtitle.Parent = Header
+    -- Status do sistema
+    local SysStatus = Instance.new("TextLabel")
+    SysStatus.Size = UDim2.new(0.6, 0, 0.4, 0)
+    SysStatus.Position = UDim2.new(0, 16, 0, 30)
+    SysStatus.BackgroundTransparency = 1
+    SysStatus.Text = "[SYSTEM] ONLINE"
+    SysStatus.TextColor3 = Color3.fromRGB(34, 197, 94)
+    SysStatus.TextSize = 11
+    SysStatus.Font = Enum.Font.Poppins
+    SysStatus.TextXAlignment = Enum.TextXAlignment.Left
+    SysStatus.Parent = Header
     
-    -- Botões de controle
+    -- Subtítulo (localização)
+    local Location = Instance.new("TextLabel")
+    Location.Size = UDim2.new(0.4, 0, 0.6, 0)
+    Location.Position = UDim2.new(0.4, 0, 0, 4)
+    Location.BackgroundTransparency = 1
+    Location.Text = "🏪 TUNING SHOP"
+    Location.TextColor3 = Color3.fromRGB(128, 140, 180)
+    Location.TextSize = 13
+    Location.Font = Enum.Font.Poppins
+    Location.TextXAlignment = Enum.TextXAlignment.Right
+    Location.Parent = Header
+    
+    -- Controles da janela
     local Controls = Instance.new("Frame")
     Controls.Name = "Controls"
-    Controls.Size = UDim2.new(0, 80, 1, 0)
-    Controls.Position = UDim2.new(1, -84, 0, 0)
+    Controls.Size = UDim2.new(0, 90, 1, 0)
+    Controls.Position = UDim2.new(1, -94, 0, 0)
     Controls.BackgroundTransparency = 1
     Controls.Parent = Header
     
     local function CreateControlButton(text, xPos, color)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 24, 0, 24)
-        btn.Position = UDim2.new(0, xPos, 0.5, -12)
+        btn.Size = UDim2.new(0, 26, 0, 26)
+        btn.Position = UDim2.new(0, xPos, 0.5, -13)
         btn.BackgroundTransparency = 1
         btn.Text = text
         btn.TextColor3 = color or Color3.fromRGB(180, 190, 220)
-        btn.TextSize = 14
+        btn.TextSize = 15
         btn.Font = Enum.Font.Poppins
         btn.Parent = Controls
         return btn
     end
     
     local minimizeBtn = CreateControlButton("—", 0)
-    local maximizeBtn = CreateControlButton("□", 28)
-    local closeBtn = CreateControlButton("✕", 56, Color3.fromRGB(255, 80, 80))
+    local maximizeBtn = CreateControlButton("□", 30)
+    local closeBtn = CreateControlButton("✕", 60, Color3.fromRGB(255, 80, 80))
     
     -- ============================================================
-    -- 6. STATUS BAR
+    -- 5. STATUS BAR COM INFO DO JOGO
     -- ============================================================
     
     local StatusBar = Instance.new("Frame")
     StatusBar.Name = "StatusBar"
-    StatusBar.Size = UDim2.new(1, -32, 0, 32)
-    StatusBar.Position = UDim2.new(0, 16, 0, 56)
-    StatusBar.BackgroundColor3 = Color3.fromRGB(20, 22, 32)
-    StatusBar.BackgroundTransparency = 0.5
+    StatusBar.Size = UDim2.new(1, -32, 0, 38)
+    StatusBar.Position = UDim2.new(0, 16, 0, 62)
+    StatusBar.BackgroundColor3 = Color3.fromRGB(18, 20, 30)
+    StatusBar.BackgroundTransparency = 0.6
     StatusBar.BorderSizePixel = 0
     StatusBar.Parent = MainFrame
     
@@ -161,7 +166,7 @@ local function CreateCarFlipperUI()
     StatusCorner.CornerRadius = UDim.new(1, 0)
     StatusCorner.Parent = StatusBar
     
-    -- Status dot com glow
+    -- Status dot
     local StatusDot = Instance.new("Frame")
     StatusDot.Name = "StatusDot"
     StatusDot.Size = UDim2.new(0, 8, 0, 8)
@@ -174,7 +179,6 @@ local function CreateCarFlipperUI()
     DotCorner.CornerRadius = UDim.new(1, 0)
     DotCorner.Parent = StatusDot
     
-    -- Glow
     local DotGlow = Instance.new("Frame")
     DotGlow.Size = UDim2.new(0, 20, 0, 20)
     DotGlow.Position = UDim2.new(0, 6, 0.5, -10)
@@ -187,44 +191,57 @@ local function CreateCarFlipperUI()
     GlowCorner.CornerRadius = UDim.new(1, 0)
     GlowCorner.Parent = DotGlow
     
-    -- Status text
+    -- Status text com informações do jogo
     local StatusText = Instance.new("TextLabel")
     StatusText.Name = "StatusText"
-    StatusText.Size = UDim2.new(1, -80, 1, 0)
+    StatusText.Size = UDim2.new(0.6, 0, 1, 0)
     StatusText.Position = UDim2.new(0, 28, 0, 0)
     StatusText.BackgroundTransparency = 1
-    StatusText.Text = "[Car Flipper] Pronto"
+    StatusText.Text = "[SYSTEM] LEGENDARY has spawned"
     StatusText.TextColor3 = Color3.fromRGB(180, 200, 240)
     StatusText.TextSize = 11
     StatusText.Font = Enum.Font.Poppins
     StatusText.TextXAlignment = Enum.TextXAlignment.Left
     StatusText.Parent = StatusBar
     
+    -- Info do carro selecionado
+    local CarInfo = Instance.new("TextLabel")
+    CarInfo.Name = "CarInfo"
+    CarInfo.Size = UDim2.new(0.4, 0, 1, 0)
+    CarInfo.Position = UDim2.new(0.6, 0, 0, 0)
+    CarInfo.BackgroundTransparency = 1
+    CarInfo.Text = "[RARE] Cryele 222B"
+    CarInfo.TextColor3 = Color3.fromRGB(255, 215, 0)
+    CarInfo.TextSize = 11
+    CarInfo.Font = Enum.Font.Poppins
+    CarInfo.TextXAlignment = Enum.TextXAlignment.Right
+    CarInfo.Parent = StatusBar
+    
     -- ============================================================
-    -- 7. TABS (Auto / Run Once)
+    -- 6. TABS (Auto / Run Once / Stats)
     -- ============================================================
     
     local TabContainer = Instance.new("Frame")
     TabContainer.Name = "TabContainer"
-    TabContainer.Size = UDim2.new(1, -32, 0, 32)
-    TabContainer.Position = UDim2.new(0, 16, 0, 94)
+    TabContainer.Size = UDim2.new(1, -32, 0, 34)
+    TabContainer.Position = UDim2.new(0, 16, 0, 106)
     TabContainer.BackgroundTransparency = 1
     TabContainer.Parent = MainFrame
     
     local function CreateTab(text, xPos, isActive)
         local tab = Instance.new("TextButton")
-        tab.Size = UDim2.new(0, 80, 1, 0)
+        tab.Size = UDim2.new(0, 90, 1, 0)
         tab.Position = UDim2.new(0, xPos, 0, 0)
         tab.BackgroundTransparency = 1
         tab.Text = text
         tab.TextColor3 = isActive and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(128, 140, 180)
-        tab.TextSize = 14
+        tab.TextSize = 13
         tab.Font = Enum.Font.Poppins
         tab.Parent = TabContainer
         
         local underline = Instance.new("Frame")
-        underline.Size = UDim2.new(0, 40, 0, 2)
-        underline.Position = UDim2.new(0.5, -20, 1, -2)
+        underline.Size = UDim2.new(0, 50, 0, 2)
+        underline.Position = UDim2.new(0.5, -25, 1, -2)
         underline.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
         underline.BackgroundTransparency = isActive and 0 or 1
         underline.BorderSizePixel = 0
@@ -234,30 +251,44 @@ local function CreateCarFlipperUI()
     end
     
     local autoTab, autoUnderline = CreateTab("Auto", 0, true)
-    local runTab, runUnderline = CreateTab("Run Once", 90, false)
+    local runTab, runUnderline = CreateTab("Run Once", 95, false)
+    local statsTab, statsUnderline = CreateTab("Stats", 190, false)
     
     autoTab.MouseButton1Click:Connect(function()
         autoTab.TextColor3 = Color3.fromRGB(255, 255, 255)
         runTab.TextColor3 = Color3.fromRGB(128, 140, 180)
+        statsTab.TextColor3 = Color3.fromRGB(128, 140, 180)
         autoUnderline.BackgroundTransparency = 0
         runUnderline.BackgroundTransparency = 1
+        statsUnderline.BackgroundTransparency = 1
     end)
     
     runTab.MouseButton1Click:Connect(function()
         runTab.TextColor3 = Color3.fromRGB(255, 255, 255)
         autoTab.TextColor3 = Color3.fromRGB(128, 140, 180)
+        statsTab.TextColor3 = Color3.fromRGB(128, 140, 180)
         runUnderline.BackgroundTransparency = 0
         autoUnderline.BackgroundTransparency = 1
+        statsUnderline.BackgroundTransparency = 1
+    end)
+    
+    statsTab.MouseButton1Click:Connect(function()
+        statsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+        autoTab.TextColor3 = Color3.fromRGB(128, 140, 180)
+        runTab.TextColor3 = Color3.fromRGB(128, 140, 180)
+        statsUnderline.BackgroundTransparency = 0
+        autoUnderline.BackgroundTransparency = 1
+        runUnderline.BackgroundTransparency = 1
     end)
     
     -- ============================================================
-    -- 8. CONTEÚDO SCROLLABLE
+    -- 7. CONTEÚDO SCROLLABLE
     -- ============================================================
     
     local ContentFrame = Instance.new("Frame")
     ContentFrame.Name = "ContentFrame"
-    ContentFrame.Size = UDim2.new(1, -32, 1, -160)
-    ContentFrame.Position = UDim2.new(0, 16, 0, 132)
+    ContentFrame.Size = UDim2.new(1, -32, 1, -190)
+    ContentFrame.Position = UDim2.new(0, 16, 0, 146)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.ClipsDescendants = true
     ContentFrame.Parent = MainFrame
@@ -272,13 +303,13 @@ local function CreateCarFlipperUI()
     Scrolling.Parent = ContentFrame
     
     local ContentLayout = Instance.new("UIListLayout")
-    ContentLayout.Padding = UDim.new(0, 8)
+    ContentLayout.Padding = UDim.new(0, 6)
     ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
     ContentLayout.Parent = Scrolling
     
     -- ============================================================
-    -- 9. CRIAR SEÇÕES
+    -- 8. CRIAR SEÇÕES
     -- ============================================================
     
     local function CreateSection(title, icon, layoutOrder)
@@ -289,7 +320,7 @@ local function CreateCarFlipperUI()
         section.Parent = Scrolling
         
         local header = Instance.new("TextLabel")
-        header.Size = UDim2.new(1, 0, 0, 28)
+        header.Size = UDim2.new(1, 0, 0, 26)
         header.BackgroundTransparency = 1
         header.Text = icon .. " " .. title
         header.TextColor3 = Color3.fromRGB(200, 215, 245)
@@ -301,7 +332,7 @@ local function CreateCarFlipperUI()
         local container = Instance.new("Frame")
         container.Name = "Container"
         container.Size = UDim2.new(1, 0, 0, 0)
-        container.Position = UDim2.new(0, 0, 0, 28)
+        container.Position = UDim2.new(0, 0, 0, 26)
         container.BackgroundTransparency = 1
         container.Parent = section
         
@@ -315,17 +346,17 @@ local function CreateCarFlipperUI()
     end
     
     -- ============================================================
-    -- 10. ADICIONAR TOGGLES
+    -- 9. TOGGLE ROW COMPLETA
     -- ============================================================
     
-    local function AddToggleRow(parent, icon, title, subtitle, defaultActive, isGreen)
+    local function AddToggleRow(parent, icon, title, subtitle, defaultActive, isGreen, actionType)
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, 32)
+        row.Size = UDim2.new(1, 0, 0, 34)
         row.BackgroundTransparency = 1
         row.Parent = parent
         
         local iconLabel = Instance.new("TextLabel")
-        iconLabel.Size = UDim2.new(0, 28, 1, 0)
+        iconLabel.Size = UDim2.new(0, 30, 1, 0)
         iconLabel.BackgroundTransparency = 1
         iconLabel.Text = icon
         iconLabel.TextSize = 16
@@ -334,8 +365,8 @@ local function CreateCarFlipperUI()
         iconLabel.Parent = row
         
         local titleLabel = Instance.new("TextLabel")
-        titleLabel.Size = UDim2.new(1, -100, 0, 16)
-        titleLabel.Position = UDim2.new(0, 32, 0, 2)
+        titleLabel.Size = UDim2.new(1, -105, 0, 17)
+        titleLabel.Position = UDim2.new(0, 34, 0, 2)
         titleLabel.BackgroundTransparency = 1
         titleLabel.Text = title
         titleLabel.TextColor3 = Color3.fromRGB(220, 230, 250)
@@ -345,8 +376,8 @@ local function CreateCarFlipperUI()
         titleLabel.Parent = row
         
         local subLabel = Instance.new("TextLabel")
-        subLabel.Size = UDim2.new(1, -100, 0, 14)
-        subLabel.Position = UDim2.new(0, 32, 0, 18)
+        subLabel.Size = UDim2.new(1, -105, 0, 14)
+        subLabel.Position = UDim2.new(0, 34, 0, 19)
         subLabel.BackgroundTransparency = 1
         subLabel.Text = subtitle or ""
         subLabel.TextColor3 = Color3.fromRGB(128, 140, 180)
@@ -355,9 +386,10 @@ local function CreateCarFlipperUI()
         subLabel.TextXAlignment = Enum.TextXAlignment.Left
         subLabel.Parent = row
         
+        -- Toggle
         local toggle = Instance.new("Frame")
-        toggle.Size = UDim2.new(0, 34, 0, 20)
-        toggle.Position = UDim2.new(1, -38, 0.5, -10)
+        toggle.Size = UDim2.new(0, 36, 0, 20)
+        toggle.Position = UDim2.new(1, -40, 0.5, -10)
         toggle.BackgroundColor3 = defaultActive and (isGreen and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(59, 130, 246)) or Color3.fromRGB(36, 44, 62)
         toggle.BorderSizePixel = 0
         toggle.Parent = row
@@ -368,7 +400,7 @@ local function CreateCarFlipperUI()
         
         local knob = Instance.new("Frame")
         knob.Size = UDim2.new(0, 14, 0, 14)
-        knob.Position = defaultActive and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+        knob.Position = defaultActive and UDim2.new(1, -18, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
         knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         knob.BorderSizePixel = 0
         knob.Parent = toggle
@@ -382,12 +414,11 @@ local function CreateCarFlipperUI()
         toggle.MouseButton1Click:Connect(function()
             isActive = not isActive
             local targetColor = isActive and (isGreen and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(59, 130, 246)) or Color3.fromRGB(36, 44, 62)
-            local targetPos = isActive and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+            local targetPos = isActive and UDim2.new(1, -18, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
             
             TweenService:Create(toggle, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
             TweenService:Create(knob, TweenInfo.new(0.2), {Position = targetPos}):Play()
             
-            -- Executar ação quando toggle é ativado
             if isActive then
                 ExecuteAction(title)
             end
@@ -397,61 +428,87 @@ local function CreateCarFlipperUI()
     end
     
     -- ============================================================
-    -- 11. FUNÇÕES DE AÇÃO
+    -- 10. FUNÇÕES DE AÇÃO
     -- ============================================================
     
     function ExecuteAction(action)
-        StatusText.Text = "[Car Flipper] Executando: " .. action
-        StatusDot.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
-        DotGlow.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+        local statusText = StatusText
+        local statusDot = StatusDot
+        local dotGlow = DotGlow
         
-        -- Tentar encontrar RemoteEvent
-        local remote = ReplicatedStorage:FindFirstChild(action:gsub(" ", ""))
-        if remote and remote:IsA("RemoteEvent") then
-            remote:FireServer()
-            print("✅ Executado: " .. action)
-        else
-            -- Tentar outros nomes comuns
-            local altNames = {
-                ["Claim Cash"] = "ClaimCash",
-                ["Claim Parts"] = "ClaimParts",
-                ["Buy Upgrades"] = "BuyUpgrade",
-                ["Claim Containers"] = "ClaimContainer",
-                ["Open Containers"] = "OpenContainer",
-                ["Claim Quests"] = "ClaimQuest",
-                ["Deliver Junk"] = "DeliverJunk",
-                ["Fix Cars"] = "FixCar",
-                ["Sell Fixed Cars"] = "SellCar",
-                ["Update Stands"] = "UpdateStand",
-                ["Buy, Fix, Sell Cheapest"] = "BuyFixSellCheapest",
-                ["Claim Playtime Rewards"] = "ClaimPlaytime",
-                ["Claim Daily Rewards"] = "ClaimDaily",
-            }
-            
-            local remoteName = altNames[action]
-            if remoteName then
-                local altRemote = ReplicatedStorage:FindFirstChild(remoteName)
-                if altRemote and altRemote:IsA("RemoteEvent") then
-                    altRemote:FireServer()
-                    print("✅ Executado: " .. action .. " (via " .. remoteName .. ")")
+        statusText.Text = "[SYSTEM] Executando: " .. action
+        statusDot.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+        dotGlow.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+        
+        -- Mapeamento de ações para RemoteEvents
+        local actionMap = {
+            ["Claim Cash"] = {"ClaimCash", "CashClaim", "CollectCash"},
+            ["Claim Parts"] = {"ClaimParts", "PartsClaim", "CollectParts"},
+            ["Buy Upgrades"] = {"BuyUpgrade", "Upgrade", "PurchaseUpgrade"},
+            ["Claim Containers"] = {"ClaimContainer", "ContainerClaim", "OpenContainer"},
+            ["Open Containers"] = {"OpenContainer", "ContainerOpen"},
+            ["Claim Quests"] = {"ClaimQuest", "QuestClaim", "CompleteQuest"},
+            ["Deliver Junk"] = {"DeliverJunk", "JunkDeliver", "SellJunk"},
+            ["Fix Cars"] = {"FixCar", "RepairCar", "CarFix"},
+            ["Sell Fixed Cars"] = {"SellCar", "CarSell", "SellFixed"},
+            ["Update Stands"] = {"UpdateStand", "StandUpdate", "RefreshStand"},
+            ["Buy, Fix, Sell Cheapest"] = {"BuyFixSell", "AutoFlip", "CheapestFlip"},
+            ["Claim Playtime Rewards"] = {"ClaimPlaytime", "PlaytimeReward"},
+            ["Claim Daily Rewards"] = {"ClaimDaily", "DailyReward"},
+            ["Auction Auto-Bid"] = {"AutoBid", "AuctionBid", "PlaceBid"},
+            ["Collect All"] = {"CollectAll", "CollectEverything"},
+            ["Auto Sell Legendary"] = {"SellLegendary", "AutoSellLegendary"},
+        }
+        
+        local remoteNames = actionMap[action] or {action:gsub(" ", "")}
+        local executed = false
+        
+        for _, remoteName in ipairs(remoteNames) do
+            local remote = ReplicatedStorage:FindFirstChild(remoteName)
+            if remote and remote:IsA("RemoteEvent") then
+                remote:FireServer()
+                executed = true
+                print("✅ Executado: " .. action .. " (via " .. remoteName .. ")")
+                break
+            end
+        end
+        
+        if not executed then
+            -- Tentar encontrar qualquer RemoteEvent com nome similar
+            for _, child in pairs(ReplicatedStorage:GetChildren()) do
+                if child:IsA("RemoteEvent") then
+                    local nameLower = child.Name:lower()
+                    local actionLower = action:lower():gsub(" ", "")
+                    if nameLower:find(actionLower) or actionLower:find(nameLower) then
+                        child:FireServer()
+                        executed = true
+                        print("✅ Executado: " .. action .. " (via " .. child.Name .. ")")
+                        break
+                    end
                 end
             end
         end
         
-        -- Reset status após 2 segundos
-        task.wait(2)
-        StatusText.Text = "[Car Flipper] Pronto"
-        StatusDot.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
-        DotGlow.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+        if not executed then
+            print("⚠️ Ação não encontrada: " .. action)
+            statusText.Text = "[SYSTEM] Ação não disponível: " .. action
+            task.wait(1)
+        end
+        
+        -- Reset status
+        task.wait(1.5)
+        statusText.Text = "[SYSTEM] LEGENDARY has spawned"
+        statusDot.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+        dotGlow.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
     end
     
     -- ============================================================
-    -- 12. CONSTRUIR SEÇÕES
+    -- 11. CONSTRUIR TODAS AS SEÇÕES
     -- ============================================================
     
-    -- Base
+    -- ===== BASE =====
     local baseSection, baseContainer = CreateSection("Base", "🏢", 1)
-    AddToggleRow(baseContainer, "💰", "Claim Cash", "Coletar dinheiro diário", true, true)
+    AddToggleRow(baseContainer, "💰", "Claim Cash", "Coletar dinheiro automático", true, true)
     AddToggleRow(baseContainer, "🧩", "Claim Parts", "Coletar peças", true)
     AddToggleRow(baseContainer, "⬆️", "Buy Upgrades", "Comprar melhorias", false)
     AddToggleRow(baseContainer, "📦", "Claim Containers", "Abrir containers", true, true)
@@ -459,54 +516,69 @@ local function CreateCarFlipperUI()
     AddToggleRow(baseContainer, "📋", "Claim Quests", "Recompensas de missões", true)
     AddToggleRow(baseContainer, "🗑️", "Deliver Junk", "Vender sucata", false)
     
-    -- Cars
+    -- ===== CARS =====
     local carsSection, carsContainer = CreateSection("Cars", "🚗", 2)
     AddToggleRow(carsContainer, "🔧", "Fix Cars", "Reparar veículos", true)
     AddToggleRow(carsContainer, "💲", "Sell Fixed Cars", "Vender reparados", true, true)
     AddToggleRow(carsContainer, "🔄", "Update Stands", "Atualizar vitrines", false)
-    AddToggleRow(carsContainer, "🏷️", "Buy, Fix, Sell Cheapest", "Auto flip", true)
+    AddToggleRow(carsContainer, "🏷️", "Buy, Fix, Sell Cheapest", "Auto flip mais barato", true)
     
-    -- Rewards
+    -- ===== REWARDS =====
     local rewardsSection, rewardsContainer = CreateSection("Rewards", "🎁", 3)
     AddToggleRow(rewardsContainer, "⏳", "Claim Playtime Rewards", "Recompensas por tempo", true, true)
     AddToggleRow(rewardsContainer, "📆", "Claim Daily Rewards", "Recompensas diárias", true)
     
+    -- ===== AUCTION =====
+    local auctionSection, auctionContainer = CreateSection("Auction", "🏪", 4)
+    AddToggleRow(auctionContainer, "🔨", "Auction Auto-Bid", "Lance automático em leilões", true, true)
+    AddToggleRow(auctionContainer, "⭐", "Auto Sell Legendary", "Vender carros lendários", false)
+    
+    -- ===== EXTRA =====
+    local extraSection, extraContainer = CreateSection("Extra", "⚡", 5)
+    AddToggleRow(extraContainer, "📦", "Collect All", "Coletar tudo de uma vez", false, true)
+    AddToggleRow(extraContainer, "🏆", "Auto Farm", "Farm automático", true)
+    
     -- ============================================================
-    -- 13. PROGRESS BAR
+    -- 12. PROGRESS BAR (como na imagem)
     -- ============================================================
     
     local ProgressFrame = Instance.new("Frame")
     ProgressFrame.Name = "ProgressFrame"
-    ProgressFrame.Size = UDim2.new(1, -32, 0, 40)
-    ProgressFrame.Position = UDim2.new(0, 16, 1, -52)
+    ProgressFrame.Size = UDim2.new(1, -32, 0, 48)
+    ProgressFrame.Position = UDim2.new(0, 16, 1, -58)
     ProgressFrame.BackgroundTransparency = 1
     ProgressFrame.Parent = MainFrame
     
-    local ProgressLabel = Instance.new("TextLabel")
-    ProgressLabel.Size = UDim2.new(0.5, 0, 0, 18)
-    ProgressLabel.Position = UDim2.new(0, 0, 0, 0)
-    ProgressLabel.BackgroundTransparency = 1
-    ProgressLabel.Text = "0%"
-    ProgressLabel.TextColor3 = Color3.fromRGB(200, 215, 245)
-    ProgressLabel.TextSize = 11
-    ProgressLabel.Font = Enum.Font.Poppins
-    ProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
-    ProgressLabel.Parent = ProgressFrame
+    -- Linha superior com stats
+    local StatsLine = Instance.new("Frame")
+    StatsLine.Size = UDim2.new(1, 0, 0, 20)
+    StatsLine.BackgroundTransparency = 1
+    StatsLine.Parent = ProgressFrame
     
-    local LevelLabel = Instance.new("TextLabel")
-    LevelLabel.Size = UDim2.new(0.5, 0, 0, 18)
-    LevelLabel.Position = UDim2.new(0.5, 0, 0, 0)
-    LevelLabel.BackgroundTransparency = 1
-    LevelLabel.Text = "Lvl.1"
-    LevelLabel.TextColor3 = Color3.fromRGB(200, 215, 245)
-    LevelLabel.TextSize = 11
-    LevelLabel.Font = Enum.Font.Poppins
-    LevelLabel.TextXAlignment = Enum.TextXAlignment.Right
-    LevelLabel.Parent = ProgressFrame
+    local function CreateStatLabel(text, xPos)
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.2, 0, 1, 0)
+        label.Position = UDim2.new(xPos, 0, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = Color3.fromRGB(180, 200, 240)
+        label.TextSize = 11
+        label.Font = Enum.Font.Poppins
+        label.TextXAlignment = Enum.TextXAlignment.Center
+        label.Parent = StatsLine
+        return label
+    end
     
+    CreateStatLabel("1/5", 0)
+    CreateStatLabel("117 / 10000", 0.2)
+    CreateStatLabel("129/s", 0.4)
+    CreateStatLabel("2356 / 100000", 0.6)
+    CreateStatLabel("Nivel.4", 0.8)
+    
+    -- Barra de progresso
     local ProgressBg = Instance.new("Frame")
-    ProgressBg.Size = UDim2.new(1, 0, 0, 6)
-    ProgressBg.Position = UDim2.new(0, 0, 0, 22)
+    ProgressBg.Size = UDim2.new(1, 0, 0, 8)
+    ProgressBg.Position = UDim2.new(0, 0, 0, 24)
     ProgressBg.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
     ProgressBg.BorderSizePixel = 0
     ProgressBg.Parent = ProgressFrame
@@ -516,7 +588,7 @@ local function CreateCarFlipperUI()
     ProgressBgCorner.Parent = ProgressBg
     
     local ProgressFill = Instance.new("Frame")
-    ProgressFill.Size = UDim2.new(0.33, 0, 1, 0)
+    ProgressFill.Size = UDim2.new(1, 0, 1, 0)
     ProgressFill.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
     ProgressFill.BorderSizePixel = 0
     ProgressFill.Parent = ProgressBg
@@ -525,8 +597,20 @@ local function CreateCarFlipperUI()
     ProgressFillCorner.CornerRadius = UDim.new(1, 0)
     ProgressFillCorner.Parent = ProgressFill
     
+    -- Percentual
+    local PercentLabel = Instance.new("TextLabel")
+    PercentLabel.Size = UDim2.new(0.1, 0, 1, 0)
+    PercentLabel.Position = UDim2.new(1, -30, 0, 0)
+    PercentLabel.BackgroundTransparency = 1
+    PercentLabel.Text = "100%"
+    PercentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PercentLabel.TextSize = 10
+    PercentLabel.Font = Enum.Font.Poppins
+    PercentLabel.TextXAlignment = Enum.TextXAlignment.Right
+    PercentLabel.Parent = ProgressBg
+    
     -- ============================================================
-    -- 14. DRAG WINDOW (arrastar pela header)
+    -- 13. DRAG WINDOW
     -- ============================================================
     
     local dragging = false
@@ -560,7 +644,7 @@ local function CreateCarFlipperUI()
     end)
     
     -- ============================================================
-    -- 15. CONTROLES DA JANELA
+    -- 14. CONTROLES DA JANELA
     -- ============================================================
     
     closeBtn.MouseButton1Click:Connect(function()
@@ -569,15 +653,14 @@ local function CreateCarFlipperUI()
     
     minimizeBtn.MouseButton1Click:Connect(function()
         MainFrame.Visible = false
-        -- Criar botão para reabrir
         local reopenBtn = Instance.new("TextButton")
         reopenBtn.Name = "ReopenBtn"
-        reopenBtn.Size = UDim2.new(0, 40, 0, 40)
+        reopenBtn.Size = UDim2.new(0, 44, 0, 44)
         reopenBtn.Position = UDim2.new(0, 10, 0, 10)
-        reopenBtn.BackgroundColor3 = Color3.fromRGB(16, 18, 26)
+        reopenBtn.BackgroundColor3 = Color3.fromRGB(13, 15, 22)
         reopenBtn.BackgroundTransparency = 0.2
         reopenBtn.Text = "🚗"
-        reopenBtn.TextSize = 20
+        reopenBtn.TextSize = 22
         reopenBtn.Font = Enum.Font.Poppins
         reopenBtn.Parent = ScreenGui
         
@@ -592,80 +675,61 @@ local function CreateCarFlipperUI()
     end)
     
     maximizeBtn.MouseButton1Click:Connect(function()
-        local isMaximized = MainFrame.Size == UDim2.new(0, 420, 0, 580)
+        local isMaximized = MainFrame.Size == UDim2.new(0, 480, 0, 650)
         if isMaximized then
-            MainFrame.Size = UDim2.new(0, 600, 0, 700)
-            MainFrame.Position = UDim2.new(0.5, -300, 0.5, -350)
+            MainFrame.Size = UDim2.new(0, 580, 0, 720)
+            MainFrame.Position = UDim2.new(0.5, -290, 0.5, -360)
         else
-            MainFrame.Size = UDim2.new(0, 420, 0, 580)
-            MainFrame.Position = UDim2.new(0.5, -210, 0.5, -290)
+            MainFrame.Size = UDim2.new(0, 480, 0, 650)
+            MainFrame.Position = UDim2.new(0.5, -240, 0.5, -325)
         end
     end)
     
     -- ============================================================
-    -- 16. AUTO-SIZE SEÇÕES
+    -- 15. AUTO-SIZE SEÇÕES
     -- ============================================================
     
-    for _, section in pairs({baseSection, carsSection, rewardsSection}) do
+    for _, section in pairs({baseSection, carsSection, rewardsSection, auctionSection, extraSection}) do
         local container = section:FindFirstChild("Container")
         if container then
             local children = container:GetChildren()
             local height = 0
             for _, child in ipairs(children) do
                 if child:IsA("Frame") then
-                    height = height + 32
+                    height = height + 34
                 end
             end
-            section.Size = UDim2.new(1, 0, 0, height + 32)
+            section.Size = UDim2.new(1, 0, 0, height + 30)
         end
     end
     
     -- ============================================================
-    -- 17. SIMULAÇÃO DE PROGRESSO
+    -- 16. SIMULAÇÃO DE PROGRESSO
     -- ============================================================
     
     task.spawn(function()
-        local progress = 0
-        while wait(3) do
-            if progress < 100 then
-                progress = progress + math.random(1, 5)
-                ProgressFill.Size = UDim2.new(math.min(progress / 100, 1), 0, 1, 0)
-                ProgressLabel.Text = string.format("%.0f%%", math.min(progress, 100))
+        local progress = 100
+        ProgressFill.Size = UDim2.new(1, 0, 1, 0)
+        PercentLabel.Text = "100%"
+        
+        while wait(5) do
+            -- Atualizar stats
+            local stats = {
+                "1/5",
+                math.random(100, 500) .. " / 10000",
+                math.random(100, 200) .. "/s",
+                math.random(1000, 5000) .. " / 100000",
+                "Nivel." .. math.random(1, 10)
+            }
+            
+            for i, child in pairs(StatsLine:GetChildren()) do
+                if child:IsA("TextLabel") and stats[i] then
+                    child.Text = stats[i]
+                end
             end
         end
     end)
     
     -- ============================================================
-    -- 18. MENSAGEM DE SUCESSO
-    -- ============================================================
-    
-    print("🚗 Car Flipper Panel Carregado com Sucesso!")
-    print("📋 Nenhuma tecla necessária - UI aberta automaticamente")
-    print("💡 Clique nos toggles para ativar/desativar ações")
-    
-    return ScreenGui
-end
-
--- ============================================================
--- 19. EXECUTAR
--- ============================================================
-
--- Criar UI automaticamente
-local UI = CreateCarFlipperUI()
-
--- ============================================================
--- 20. ANTI-KICK / KEEP ALIVE
--- ============================================================
-
-task.spawn(function()
-    while true do
-        -- Prevenir kick por inatividade
-        pcall(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
-        end)
-        task.wait(60)
-    end
-end)
-
-print("✅ Car Flipper Panel pronto para uso!")
+    -- 17. ANTI-KICK
+    -- ===========================================================
