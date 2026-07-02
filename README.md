@@ -2,7 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO
     Interface Premium com Layout Horizontal
-    CORRIGIDO: Checkboxes e Relógio em Tempo Real
+    COM BOTÃO FLUTUANTE PARA ABRIR/FECHAR
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -46,19 +46,17 @@ local Theme = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 3. SISTEMA DE RELÓGIO EM TEMPO REAL (CORRIGIDO)
+-- 3. SISTEMA DE RELÓGIO EM TEMPO REAL
 -- ═══════════════════════════════════════════════════════════════
 
 local ClockSystem = {
     currentTime = "",
     lastUpdate = 0,
-    updateInterval = 1, -- Atualiza a cada 1 segundo
+    updateInterval = 1,
     isRunning = true,
 }
 
--- Função para obter data/hora atual
 function ClockSystem:GetCurrentDateTime()
-    -- Tenta obter hora do sistema via API
     local success, result = pcall(function()
         local response = HttpService:GetAsync("https://worldtimeapi.org/api/timezone/America/Sao_Paulo")
         if response then
@@ -80,7 +78,6 @@ function ClockSystem:GetCurrentDateTime()
         end
     end)
     
-    -- Fallback para hora local do Roblox
     if not success or not result then
         local currentTime = os.time()
         local dateTable = os.date("*t", currentTime)
@@ -96,7 +93,6 @@ function ClockSystem:GetCurrentDateTime()
     return result
 end
 
--- Função para atualizar o relógio
 function ClockSystem:Update()
     if not self.isRunning then return end
     
@@ -105,7 +101,7 @@ function ClockSystem:Update()
         local newTime = self:GetCurrentDateTime()
         if newTime ~= self.currentTime then
             self.currentTime = newTime
-            return true -- Houve mudança
+            return true
         end
         self.lastUpdate = currentTime
     end
@@ -113,16 +109,93 @@ function ClockSystem:Update()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. CRIAÇÃO DA INTERFACE
+-- 4. BOTÃO FLUTUANTE (Toggle Button)
 -- ═══════════════════════════════════════════════════════════════
 
--- 4.1 ScreenGui
-local MainGui = Instance.new("ScreenGui")
-MainGui.Name = "CarFlipperGUI"
-MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-MainGui.ResetOnSpawn = false
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Position = UDim2.new(0, 20, 0.5, -25)
+ToggleButton.BackgroundColor3 = Theme.Accent
+ToggleButton.BackgroundTransparency = 0
+ToggleButton.Text = "▶"
+ToggleButton.TextColor3 = Theme.Background
+ToggleButton.TextSize = 20
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Parent = MainGui
 
--- 4.2 MainFrame
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.Parent = ToggleButton
+
+-- Sombra do botão
+local ToggleShadow = Instance.new("Frame")
+ToggleShadow.Name = "Shadow"
+ToggleShadow.Size = UDim2.new(1, 10, 1, 10)
+ToggleShadow.Position = UDim2.new(0, -5, 0, -5)
+ToggleShadow.BackgroundColor3 = Theme.Shadow
+ToggleShadow.BackgroundTransparency = 0.5
+ToggleShadow.BorderSizePixel = 0
+ToggleShadow.Parent = ToggleButton
+
+local ToggleShadowCorner = Instance.new("UICorner")
+ToggleShadowCorner.CornerRadius = UDim.new(1, 0)
+ToggleShadowCorner.Parent = ToggleShadow
+
+-- Efeitos do botão
+ToggleButton.MouseEnter:Connect(function()
+    TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
+        Size = UDim2.new(0, 55, 0, 55),
+        BackgroundColor3 = Theme.AccentHover
+    }):Play()
+end)
+
+ToggleButton.MouseLeave:Connect(function()
+    TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
+        Size = UDim2.new(0, 50, 0, 50),
+        BackgroundColor3 = Theme.Accent
+    }):Play()
+end)
+
+-- Função para arrastar o botão
+local isDragging = false
+local dragStart = Vector2.new()
+local buttonStartPos = UDim2.new()
+
+ToggleButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = true
+        dragStart = input.Position
+        buttonStartPos = ToggleButton.Position
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and isDragging then
+        isDragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        local newX = buttonStartPos.X.Offset + delta.X
+        local newY = buttonStartPos.Y.Offset + delta.Y
+        
+        -- Limitar para não sair da tela
+        newX = math.max(10, math.min(newX, 100))
+        newY = math.max(10, math.min(newY, 200))
+        
+        ToggleButton.Position = UDim2.new(0, newX, 0, newY)
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 5. CRIAÇÃO DA INTERFACE PRINCIPAL
+-- ═══════════════════════════════════════════════════════════════
+
+-- 5.1 MainFrame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 920, 0, 560)
@@ -131,6 +204,7 @@ MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = MainGui
+MainFrame.Visible = false -- Começa escondido
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
@@ -141,7 +215,7 @@ MainStroke.Color = Theme.Border
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
--- Sombra
+-- Sombra do MainFrame
 local Shadow = Instance.new("Frame")
 Shadow.Name = "Shadow"
 Shadow.Size = UDim2.new(1, 20, 1, 20)
@@ -156,7 +230,7 @@ ShadowCorner.CornerRadius = UDim.new(0, 18)
 ShadowCorner.Parent = Shadow
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. BARRA DE TÍTULO
+-- 6. BARRA DE TÍTULO (SEM BOTÃO FECHAR)
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
@@ -184,7 +258,7 @@ TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.TextYAlignment = Enum.TextYAlignment.Center
 TitleText.Parent = TitleBar
 
--- Data/Hora (atualizado em tempo real)
+-- Data/Hora
 local DateTimeText = Instance.new("TextLabel")
 DateTimeText.Name = "DateTimeText"
 DateTimeText.Size = UDim2.new(0.35, -10, 1, 0)
@@ -198,50 +272,8 @@ DateTimeText.TextXAlignment = Enum.TextXAlignment.Right
 DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
 DateTimeText.Parent = TitleBar
 
--- Botão Fechar
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Name = "CloseBtn"
-CloseBtn.Size = UDim2.new(0, 34, 0, 34)
-CloseBtn.Position = UDim2.new(1, -44, 0.5, -17)
-CloseBtn.BackgroundColor3 = Theme.SurfaceLight
-CloseBtn.BackgroundTransparency = 0
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Theme.TextSecondary
-CloseBtn.TextSize = 18
-CloseBtn.Font = Enum.Font.Gotham
-CloseBtn.BorderSizePixel = 0
-CloseBtn.Parent = TitleBar
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(1, 0)
-CloseCorner.Parent = CloseBtn
-
-CloseBtn.MouseEnter:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Theme.Danger,
-        TextColor3 = Color3.fromRGB(255, 255, 255)
-    }):Play()
-end)
-
-CloseBtn.MouseLeave:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Theme.SurfaceLight,
-        TextColor3 = Theme.TextSecondary
-    }):Play()
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    ClockSystem.isRunning = false
-    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-        Size = UDim2.new(0, 920, 0, 0),
-        Position = UDim2.new(0.5, -460, 0.5, 0)
-    }):Play()
-    task.wait(0.3)
-    MainGui.Enabled = false
-end)
-
 -- ═══════════════════════════════════════════════════════════════
--- 6. ABA AUTO
+-- 7. ABA AUTO
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
@@ -251,7 +283,6 @@ TabContainer.Position = UDim2.new(0, 10, 0, 54)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
--- Aba Auto
 local AutoTab = Instance.new("TextButton")
 AutoTab.Name = "AutoTab"
 AutoTab.Size = UDim2.new(0.15, 0, 1, -4)
@@ -269,7 +300,7 @@ AutoTabCorner.CornerRadius = UDim.new(0, 8)
 AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. STATUS
+-- 8. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
 local StatusLabel = Instance.new("TextLabel")
@@ -286,7 +317,7 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. CONTAINER DE CONTEÚDO
+-- 9. CONTAINER DE CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
@@ -304,7 +335,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. SISTEMA DE CHECKBOX (CORRIGIDO)
+-- 10. SISTEMA DE CHECKBOX
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -317,7 +348,6 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
     container.BackgroundTransparency = 1
     container.Parent = parent
     
-    -- Checkbox BG
     local checkBG = Instance.new("Frame")
     checkBG.Name = "CheckBG"
     checkBG.Size = UDim2.new(0, 20, 0, 20)
@@ -335,7 +365,6 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
     checkStroke.Thickness = 1
     checkStroke.Parent = checkBG
     
-    -- Ícone Check
     local checkIcon = Instance.new("TextLabel")
     checkIcon.Name = "CheckIcon"
     checkIcon.Size = UDim2.new(1, 0, 1, 0)
@@ -349,13 +378,12 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
     checkIcon.Visible = false
     checkIcon.Parent = checkBG
     
-    -- Label (CORRIGIDO)
     local label = Instance.new("TextLabel")
     label.Name = "Label"
     label.Size = UDim2.new(1, -26, 1, 0)
     label.Position = UDim2.new(0, 26, 0, 0)
     label.BackgroundTransparency = 1
-    label.Text = labelText  -- <--- CORRIGIDO: usa labelText
+    label.Text = labelText
     label.TextColor3 = Theme.TextPrimary
     label.TextSize = 13
     label.Font = Enum.Font.Gotham
@@ -363,7 +391,6 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
     label.TextYAlignment = Enum.TextYAlignment.Center
     label.Parent = container
     
-    -- Estado
     local state = {
         checked = false,
         container = container,
@@ -412,7 +439,7 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. CONSTRUÇÃO DAS SEÇÕES
+-- 11. CONSTRUÇÃO DAS SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local SectionsData = {
@@ -446,7 +473,6 @@ local SectionsData = {
     }
 }
 
--- Criar seções horizontalmente
 local sectionWidth = 280
 local spacing = 20
 local startX = 10
@@ -495,7 +521,6 @@ for i, sectionData in ipairs(SectionsData) do
     divider.BorderSizePixel = 0
     divider.Parent = sectionContainer
     
-    -- Criar checkboxes (CORRIGIDO)
     local startY = 48
     for j, labelText in ipairs(sectionData.items) do
         local yPos = startY + ((j - 1) * 32)
@@ -510,7 +535,7 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. SISTEMA DE ARRASTAR
+-- 12. SISTEMA DE ARRASTAR
 -- ═══════════════════════════════════════════════════════════════
 
 local Dragging = false
@@ -550,11 +575,69 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. ATUALIZAÇÃO EM TEMPO REAL - RELÓGIO (CORRIGIDO)
+-- 13. FUNÇÕES DE ABRIR/FECHAR
 -- ═══════════════════════════════════════════════════════════════
 
--- Função para atualizar o relógio continuamente
-local function UpdateClock()
+local isOpen = false
+local toggleAnimating = false
+
+function ToggleGUI()
+    if toggleAnimating then return end
+    toggleAnimating = true
+    
+    isOpen = not isOpen
+    
+    if isOpen then
+        -- Abrir
+        MainFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 920, 0, 0)
+        MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
+        
+        TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 920, 0, 560),
+            Position = UDim2.new(0.5, -460, 0.5, -280)
+        }):Play()
+        
+        ToggleButton.Text = "◀"
+        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
+            BackgroundColor3 = Theme.Danger
+        }):Play()
+        
+        ClockSystem.isRunning = true
+        CarFlipperAPI.RefreshClock()
+        
+    else
+        -- Fechar
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+            Size = UDim2.new(0, 920, 0, 0),
+            Position = UDim2.new(0.5, -460, 0.5, 0)
+        }):Play()
+        
+        ToggleButton.Text = "▶"
+        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
+            BackgroundColor3 = Theme.Accent
+        }):Play()
+        
+        ClockSystem.isRunning = false
+        
+        task.wait(0.3)
+        MainFrame.Visible = false
+    end
+    
+    toggleAnimating = false
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 14. EVENTO DO BOTÃO FLUTUANTE
+-- ═══════════════════════════════════════════════════════════════
+
+ToggleButton.MouseButton1Click:Connect(ToggleGUI)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 15. ATUALIZAÇÃO EM TEMPO REAL - RELÓGIO
+-- ═══════════════════════════════════════════════════════════════
+
+function UpdateClock()
     if not ClockSystem.isRunning then return end
     
     local newTime = ClockSystem:GetCurrentDateTime()
@@ -563,39 +646,19 @@ local function UpdateClock()
     end
 end
 
--- Loop de atualização do relógio
 RunService.Heartbeat:Connect(function()
     UpdateClock()
 end)
 
--- Atualização inicial
-task.wait(0.1)
-DateTimeText.Text = ClockSystem:GetCurrentDateTime()
-
--- Atualização adicional a cada 1 segundo (garantia)
 spawn(function()
-    while ClockSystem.isRunning and MainGui.Enabled do
+    while true do
         task.wait(1)
         UpdateClock()
     end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. ANIMAÇÃO DE ENTRADA
--- ═══════════════════════════════════════════════════════════════
-
-MainFrame.Size = UDim2.new(0, 920, 0, 0)
-MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
-
-task.wait(0.1)
-
-TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 920, 0, 560),
-    Position = UDim2.new(0.5, -460, 0.5, -280)
-}):Play()
-
--- ═══════════════════════════════════════════════════════════════
--- 14. API PÚBLICA
+-- 16. API PÚBLICA
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
@@ -637,47 +700,32 @@ local CarFlipperAPI = {
         return states
     end,
     
-    Show = function()
-        MainGui.Enabled = true
-        ClockSystem.isRunning = true
-        MainFrame.Size = UDim2.new(0, 920, 0, 0)
-        MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
-        task.wait(0.1)
-        TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 920, 0, 560),
-            Position = UDim2.new(0.5, -460, 0.5, -280)
-        }):Play()
-        CarFlipperAPI.RefreshClock()
+    Toggle = ToggleGUI,
+    Open = function()
+        if not isOpen then ToggleGUI() end
     end,
-    Hide = function()
-        ClockSystem.isRunning = false
-        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-            Size = UDim2.new(0, 920, 0, 0),
-            Position = UDim2.new(0.5, -460, 0.5, 0)
-        }):Play()
-        task.wait(0.3)
-        MainGui.Enabled = false
+    Close = function()
+        if isOpen then ToggleGUI() end
     end,
-    Toggle = function()
-        if MainGui.Enabled then
-            CarFlipperAPI.Hide()
-        else
-            CarFlipperAPI.Show()
-        end
+    IsOpen = function()
+        return isOpen
     end,
 }
 
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. FINALIZAÇÃO
+-- 17. FINALIZAÇÃO
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado com sucesso!")
-print("📐 Layout Horizontal - Checkboxes visíveis")
-print("🕐 Sistema de relógio em tempo real ativo (atualização a cada 1 segundo)")
+print("📌 Botão flutuante para abrir/fechar (▶/◀)")
+print("🕐 Sistema de relógio em tempo real ativo")
 print("📌 Use _G.CarFlipper para controlar a interface")
 
--- Status inicial
 CarFlipperAPI.SetStatus("[Car Flipper] Aguardando ações...")
 CarFlipperAPI.RefreshClock()
+
+-- Iniciar com a interface fechada
+MainFrame.Visible = false
+ToggleButton.Text = "▶"
