@@ -1,8 +1,7 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH
-    Interface Premium com Layout Horizontal
-    Sistema automático de coleta de dinheiro
+    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
+    Teleporte automático para área de coleta + Coleta automática
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -16,10 +15,16 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
 
 -- ═══════════════════════════════════════════════════════════════
--- 2. TEMA
+-- 2. CONFIGURAÇÕES DO CLAIM CASH
+-- ═══════════════════════════════════════════════════════════════
+
+-- POSIÇÃO DE COLETA - AJUSTE CONFORME NECESSÁRIO
+local CASH_COLLECT_POSITION = Vector3.new(0, 5, 0) -- <-- MUDE AQUI para a posição correta
+
+-- ═══════════════════════════════════════════════════════════════
+-- 3. TEMA
 -- ═══════════════════════════════════════════════════════════════
 
 local Theme = {
@@ -41,10 +46,11 @@ local Theme = {
     SliderBG = Color3.fromRGB(35, 35, 45),
     SliderFill = Color3.fromRGB(255, 200, 50),
     SliderThumb = Color3.fromRGB(255, 215, 75),
+    Green = Color3.fromRGB(50, 220, 100),
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 3. SISTEMA CLAIM CASH
+-- 4. SISTEMA CLAIM CASH
 -- ═══════════════════════════════════════════════════════════════
 
 local ClaimCash = {
@@ -52,14 +58,276 @@ local ClaimCash = {
     interval = 5, -- segundos
     task = nil,
     isRunning = false,
-    cashPosition = nil, -- Será definido pelo usuário
+    cashPosition = CASH_COLLECT_POSITION,
+    collectRadius = 10, -- Raio para detectar dinheiro
 }
 
--- Posição de coleta (exemplo - ajuste conforme necessário)
-local CASH_POSITION = Vector3.new(0, 5, 0) -- Substitua pela posição real
+-- ═══════════════════════════════════════════════════════════════
+-- 5. FUNÇÕES DE COLETA DE DINHEIRO
+-- ═══════════════════════════════════════════════════════════════
+
+-- Função para encontrar e coletar dinheiro
+local function FindAndCollectCash()
+    local character = LocalPlayer.Character
+    if not character then return false end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+    
+    local collected = false
+    local cashObjects = {}
+    
+    -- Procurar por objetos de dinheiro no workspace
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        -- Verifica se é um objeto de dinheiro
+        local isCash = false
+        local objName = obj.Name:lower()
+        
+        -- Nomes comuns de objetos de dinheiro
+        if objName:find("cash") or 
+           objName:find("money") or 
+           objName:find("coin") or 
+           objName:find("dollar") or
+           objName:find("dinheiro") or
+           objName:find("golds") or
+           objName:find("moeda") then
+            isCash = true
+        end
+        
+        -- Verifica se é uma parte ou modelo e está próximo
+        if isCash and (obj:IsA("Part") or obj:IsA("Model") or obj:IsA("BasePart")) then
+            local position = obj:IsA("Model") and obj.PrimaryPart and obj.PrimaryPart.Position or 
+                            obj:IsA("BasePart") and obj.Position or nil
+            
+            if position then
+                local distance = (position - humanoidRootPart.Position).Magnitude
+                if distance < ClaimCash.collectRadius then
+                    table.insert(cashObjects, obj)
+                end
+            end
+        end
+    end
+    
+    -- Se encontrou objetos de dinheiro, coletar
+    if #cashObjects > 0 then
+        for _, obj in ipairs(cashObjects) do
+            if obj and obj.Parent then
+                -- Tenta coletar o dinheiro
+                local success = pcall(function()
+                    -- Método 1: Click Detector
+                    local clickDetector = obj:FindFirstChild("ClickDetector")
+                    if clickDetector then
+                        clickDetector:Click()
+                        collected = true
+                        print("💰 Coletou dinheiro via ClickDetector: " .. obj.Name)
+                        return
+                    end
+                    
+                    -- Método 2: Proximity Prompt
+                    local proximityPrompt = obj:FindFirstChild("ProximityPrompt")
+                    if proximityPrompt then
+                        proximityPrompt:InputHold()
+                        task.wait(0.1)
+                        proximityPrompt:InputRelease()
+                        collected = true
+                        print("💰 Coletou dinheiro via ProximityPrompt: " .. obj.Name)
+                        return
+                    end
+                    
+                    -- Método 3: Tool
+                    local tool = obj:FindFirstChild("Tool")
+                    if tool then
+                        local backpack = LocalPlayer:FindFirstChild("Backpack")
+                        if backpack then
+                            tool.Parent = backpack
+                            collected = true
+                            print("💰 Coletou dinheiro via Tool: " .. obj.Name)
+                            return
+                        end
+                    end
+                    
+                    -- Método 4: Touched
+                    local touched = obj:FindFirstChild("Touched")
+                    if touched then
+                        firetouchinterest(humanoidRootPart, obj, 0)
+                        task.wait(0.1)
+                        firetouchinterest(humanoidRootPart, obj, 1)
+                        collected = true
+                        print("💰 Coletou dinheiro via Touch: " .. obj.Name)
+                        return
+                    end
+                    
+                    -- Método 5: Remover objeto (simular coleta)
+                    if obj:IsA("BasePart") or obj:IsA("Model") then
+                        obj:Destroy()
+                        collected = true
+                        print("💰 Coletou dinheiro (destruído): " .. obj.Name)
+                        return
+                    end
+                end)
+                
+                if success and collected then
+                    break
+                end
+            end
+        end
+    end
+    
+    -- Se não encontrou objetos, tenta coletar via interface
+    if not collected then
+        -- Tentar encontrar e clicar em botões de coleta na interface
+        local guis = LocalPlayer:FindFirstChild("PlayerGui")
+        if guis then
+            for _, gui in ipairs(guis:GetChildren()) do
+                if gui:IsA("ScreenGui") then
+                    for _, btn in ipairs(gui:GetDescendants()) do
+                        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                            local btnText = btn.Text or ""
+                            if btnText:lower():find("collect") or 
+                               btnText:lower():find("coletar") or 
+                               btnText:lower():find("cash") or
+                               btnText:lower():find("dinheiro") or
+                               btnText:lower():find("reivindicar") or
+                               btnText:lower():find("claim") then
+                                
+                                pcall(function()
+                                    btn:Click()
+                                    collected = true
+                                    print("💰 Coletou dinheiro via botão: " .. btnText)
+                                    break
+                                end)
+                            end
+                        end
+                    end
+                end
+                if collected then break end
+            end
+        end
+    end
+    
+    return collected
+end
+
+-- Teleportar para posição de coleta
+local function TeleportToCash()
+    if not ClaimCash.enabled then return false end
+    
+    local character = LocalPlayer.Character
+    if not character then return false end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+    
+    UpdateStatus("[Car Flipper] Teleportando para Cash...")
+    
+    -- Teleportar
+    humanoidRootPart.CFrame = CFrame.new(ClaimCash.cashPosition)
+    task.wait(0.5)
+    
+    return true
+end
+
+-- Coletar dinheiro
+local function CollectCash()
+    if not ClaimCash.enabled then return false end
+    
+    UpdateStatus("[Car Flipper] Coletando dinheiro...")
+    
+    -- Tentar coletar
+    local collected = FindAndCollectCash()
+    
+    if collected then
+        UpdateStatus("[Car Flipper] Dinheiro coletado!")
+        return true
+    else
+        UpdateStatus("[Car Flipper] Nenhum dinheiro encontrado...")
+        return false
+    end
+end
+
+-- Loop principal do Claim Cash
+local function ClaimCashLoop()
+    while ClaimCash.enabled and ClaimCash.isRunning do
+        -- Teleportar
+        local teleportSuccess = TeleportToCash()
+        if not teleportSuccess then
+            UpdateStatus("[Car Flipper] Erro ao teleportar, tentando novamente...")
+            task.wait(1)
+        end
+        
+        -- Coletar (tenta várias vezes)
+        local collectSuccess = false
+        for attempt = 1, 3 do
+            collectSuccess = CollectCash()
+            if collectSuccess then break end
+            task.wait(0.5)
+        end
+        
+        if not collectSuccess then
+            UpdateStatus("[Car Flipper] Nenhum dinheiro disponível...")
+        end
+        
+        -- Aguardar intervalo
+        local waitTime = ClaimCash.interval
+        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
+        
+        -- Esperar com checagem de cancelamento
+        local startTime = tick()
+        while ClaimCash.enabled and ClaimCash.isRunning and (tick() - startTime) < waitTime do
+            task.wait(0.1)
+        end
+    end
+    
+    ClaimCash.isRunning = false
+    if not ClaimCash.enabled then
+        UpdateStatus("[Car Flipper] Claim Cash parado")
+    end
+end
+
+-- Iniciar Claim Cash
+local function StartClaimCash()
+    if ClaimCash.isRunning then return end
+    if not ClaimCash.enabled then return end
+    
+    ClaimCash.isRunning = true
+    UpdateStatus("[Car Flipper] Claim Cash iniciado")
+    
+    ClaimCash.task = task.spawn(ClaimCashLoop)
+end
+
+-- Parar Claim Cash
+local function StopClaimCash()
+    ClaimCash.enabled = false
+    ClaimCash.isRunning = false
+    
+    if ClaimCash.task then
+        task.cancel(ClaimCash.task)
+        ClaimCash.task = nil
+    end
+    
+    UpdateStatus("[Car Flipper] Claim Cash parado")
+end
+
+-- Alternar Claim Cash
+local function ToggleClaimCash()
+    ClaimCash.enabled = not ClaimCash.enabled
+    
+    if ClaimCash.enabled then
+        StartClaimCash()
+    else
+        StopClaimCash()
+    end
+end
+
+-- Atualizar status
+local function UpdateStatus(text)
+    if StatusLabel then
+        StatusLabel.Text = text
+    end
+end
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. RELÓGIO
+-- 6. RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 local ClockSystem = {
@@ -99,120 +367,7 @@ function ClockSystem:GetCurrentDateTime()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. FUNÇÕES DO CLAIM CASH
--- ═══════════════════════════════════════════════════════════════
-
--- Teleportar para posição de coleta
-function TeleportToCash()
-    if not ClaimCash.enabled then return end
-    
-    local character = LocalPlayer.Character
-    if not character then return end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return end
-    
-    -- Atualizar status
-    UpdateStatus("[Car Flipper] Teleportando para Cash...")
-    
-    -- Teleportar
-    humanoidRootPart.CFrame = CFrame.new(CASH_POSITION)
-    
-    -- Aguardar chegada
-    task.wait(0.5)
-end
-
--- Coletar dinheiro
-function CollectCash()
-    if not ClaimCash.enabled then return end
-    
-    -- Atualizar status
-    UpdateStatus("[Car Flipper] Coletando dinheiro...")
-    
-    -- Aqui você deve implementar a lógica real de coleta
-    -- Exemplo: encontrar e clicar no objeto de dinheiro
-    local cashObjects = workspace:FindFirstChild("Cash") or workspace:FindFirstChild("Money")
-    
-    if cashObjects then
-        -- Simular coleta (substitua pela lógica real)
-        print("💰 Dinheiro coletado!")
-    else
-        print("⚠️ Nenhum objeto de dinheiro encontrado")
-    end
-    
-    -- Pequena pausa após coleta
-    task.wait(0.3)
-end
-
--- Loop principal do Claim Cash
-function StartClaimCash()
-    if ClaimCash.isRunning then return end
-    if not ClaimCash.enabled then return end
-    
-    ClaimCash.isRunning = true
-    UpdateStatus("[Car Flipper] Claim Cash iniciado")
-    
-    -- Criar thread principal
-    ClaimCash.task = task.spawn(function()
-        while ClaimCash.enabled and ClaimCash.isRunning do
-            -- Teleportar
-            TeleportToCash()
-            
-            -- Coletar
-            CollectCash()
-            
-            -- Aguardar intervalo
-            local waitTime = ClaimCash.interval
-            UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
-            
-            -- Esperar com checagem de cancelamento
-            local startTime = tick()
-            while ClaimCash.enabled and ClaimCash.isRunning and (tick() - startTime) < waitTime do
-                task.wait(0.1)
-            end
-        end
-        
-        -- Quando sair do loop
-        if not ClaimCash.enabled then
-            UpdateStatus("[Car Flipper] Claim Cash parado")
-        end
-        ClaimCash.isRunning = false
-    end)
-end
-
--- Parar Claim Cash
-function StopClaimCash()
-    ClaimCash.enabled = false
-    ClaimCash.isRunning = false
-    
-    if ClaimCash.task then
-        task.cancel(ClaimCash.task)
-        ClaimCash.task = nil
-    end
-    
-    UpdateStatus("[Car Flipper] Claim Cash parado")
-end
-
--- Alternar Claim Cash
-function ToggleClaimCash()
-    ClaimCash.enabled = not ClaimCash.enabled
-    
-    if ClaimCash.enabled then
-        StartClaimCash()
-    else
-        StopClaimCash()
-    end
-end
-
--- Atualizar status
-function UpdateStatus(text)
-    if StatusLabel then
-        StatusLabel.Text = text
-    end
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 6. BOTÃO FLUTUANTE
+-- 7. BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
@@ -238,7 +393,7 @@ ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. INTERFACE PRINCIPAL
+-- 8. INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local MainGui = Instance.new("ScreenGui")
@@ -267,7 +422,7 @@ MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. BARRA DE TÍTULO
+-- 9. BARRA DE TÍTULO
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
@@ -308,7 +463,7 @@ DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
 DateTimeText.Parent = TitleBar
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. ABA AUTO
+-- 10. ABA AUTO
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
@@ -335,7 +490,7 @@ AutoTabCorner.CornerRadius = UDim.new(0, 8)
 AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. STATUS
+-- 11. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
 local StatusLabel = Instance.new("TextLabel")
@@ -352,7 +507,7 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. CONTEÚDO
+-- 12. CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
@@ -370,14 +525,12 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. CHECKBOXES COM SLIDER
+-- 13. CHECKBOXES COM SLIDER
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
-local SliderContainers = {}
 
 function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider)
-    -- Container principal
     local container = Instance.new("Frame")
     container.Name = name .. "Container"
     container.Size = UDim2.new(0, 165, 0, hasSlider and 70 or 30)
@@ -385,7 +538,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
     container.BackgroundTransparency = 1
     container.Parent = parent
     
-    -- Checkbox
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name
     checkboxContainer.Size = UDim2.new(0, 165, 0, 30)
@@ -431,7 +583,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
     label.TextYAlignment = Enum.TextYAlignment.Center
     label.Parent = checkboxContainer
     
-    -- Slider (se tiver)
     local sliderContainer = nil
     local sliderFill = nil
     local sliderThumb = nil
@@ -452,7 +603,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
         sliderCorner.CornerRadius = UDim.new(0, 8)
         sliderCorner.Parent = sliderContainer
         
-        -- Fundo do slider
         local sliderBg = Instance.new("Frame")
         sliderBg.Name = "SliderBg"
         sliderBg.Size = UDim2.new(1, -10, 0, 4)
@@ -465,7 +615,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
         sliderBgCorner.CornerRadius = UDim.new(1, 0)
         sliderBgCorner.Parent = sliderBg
         
-        -- Barra preenchida
         sliderFill = Instance.new("Frame")
         sliderFill.Name = "SliderFill"
         sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
@@ -478,7 +627,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
         sliderFillCorner.CornerRadius = UDim.new(1, 0)
         sliderFillCorner.Parent = sliderFill
         
-        -- Thumb do slider
         sliderThumb = Instance.new("Frame")
         sliderThumb.Name = "SliderThumb"
         sliderThumb.Size = UDim2.new(0, 14, 0, 14)
@@ -491,21 +639,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
         thumbCorner.CornerRadius = UDim.new(1, 0)
         thumbCorner.Parent = sliderThumb
         
-        -- Sombra do thumb
-        local thumbShadow = Instance.new("Frame")
-        thumbShadow.Name = "ThumbShadow"
-        thumbShadow.Size = UDim2.new(1, 6, 1, 6)
-        thumbShadow.Position = UDim2.new(0, -3, 0, -3)
-        thumbShadow.BackgroundColor3 = Theme.Shadow
-        thumbShadow.BackgroundTransparency = 0.5
-        thumbShadow.BorderSizePixel = 0
-        thumbShadow.Parent = sliderThumb
-        
-        local thumbShadowCorner = Instance.new("UICorner")
-        thumbShadowCorner.CornerRadius = UDim.new(1, 0)
-        thumbShadowCorner.Parent = thumbShadow
-        
-        -- Texto do valor
         sliderValueText = Instance.new("TextLabel")
         sliderValueText.Name = "ValueText"
         sliderValueText.Size = UDim2.new(0, 50, 1, 0)
@@ -519,13 +652,11 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
         sliderValueText.TextYAlignment = Enum.TextYAlignment.Center
         sliderValueText.Parent = sliderContainer
         
-        -- Variáveis do slider
         local minValue = 0.3
         local maxValue = 300
         local currentValue = 5
         local isDraggingSlider = false
         
-        -- Atualizar slider
         local function UpdateSlider(value)
             currentValue = math.max(minValue, math.min(maxValue, value))
             local percent = (currentValue - minValue) / (maxValue - minValue)
@@ -539,13 +670,11 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
                 sliderValueText.Text = string.format("%.1f ms", currentValue)
             end
             
-            -- Atualizar intervalo
             if name == "ClaimCash" then
                 ClaimCash.interval = currentValue
             end
         end
         
-        -- Função para pegar posição do mouse/touch
         local function GetSliderPercent(input)
             local sliderPos = sliderContainer.AbsolutePosition
             local sliderSize = sliderContainer.AbsoluteSize.X - 10
@@ -553,11 +682,9 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
             
             local percent = (inputPos - sliderPos.X - 5) / sliderSize
             percent = math.max(0, math.min(1, percent))
-            
             return percent
         end
         
-        -- Eventos do slider
         sliderContainer.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or 
                input.UserInputType == Enum.UserInputType.Touch then
@@ -584,23 +711,9 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
             end
         end)
         
-        -- Inicializar slider
         UpdateSlider(currentValue)
-        
-        -- Salvar referências
-        SliderContainers[name] = {
-            container = sliderContainer,
-            fill = sliderFill,
-            thumb = sliderThumb,
-            valueText = sliderValueText,
-            update = UpdateSlider,
-            setVisible = function(visible)
-                sliderContainer.Visible = visible
-            end
-        }
     end
     
-    -- Estado da checkbox
     local state = {
         checked = false,
         checkBG = checkBG,
@@ -621,14 +734,12 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
             }):Play()
             state.checkIcon.Visible = true
             
-            -- Mostrar slider se tiver
             if state.hasSlider and sliderContainer then
                 sliderContainer.Visible = true
                 TweenService:Create(sliderContainer, TweenInfo.new(0.3), {
                     BackgroundTransparency = 0
                 }):Play()
                 
-                -- Ativar função específica
                 if state.name == "ClaimCash" then
                     ToggleClaimCash()
                 end
@@ -639,7 +750,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
             }):Play()
             state.checkIcon.Visible = false
             
-            -- Esconder slider se tiver
             if state.hasSlider and sliderContainer then
                 TweenService:Create(sliderContainer, TweenInfo.new(0.3), {
                     BackgroundTransparency = 1
@@ -647,7 +757,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
                 task.wait(0.3)
                 sliderContainer.Visible = false
                 
-                -- Desativar função específica
                 if state.name == "ClaimCash" then
                     ToggleClaimCash()
                 end
@@ -667,7 +776,7 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. SEÇÕES
+-- 14. SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local SectionsData = {
@@ -761,110 +870,6 @@ for i, sectionData in ipairs(SectionsData) do
         
         local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
         CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yPos, hasSlider)
-        
-        -- Ajustar altura para checkbox com slider
-        if hasSlider then
-            -- A altura já foi ajustada no CreateCheckboxWithSlider
-        end
     end
     
-    -- Calcular altura total da seção
-    local totalHeight = 48
-    for j, item in ipairs(sectionData.items) do
-        local hasSlider = false
-        if type(item) == "table" then
-            hasSlider = item.hasSlider or false
-        end
-        totalHeight = totalHeight + (hasSlider and 70 or 30)
-    end
-    totalHeight = totalHeight + 16
-    
-    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight)
-end
-
-Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
-
--- ═══════════════════════════════════════════════════════════════
--- 14. SISTEMA DE TOGGLE
--- ═══════════════════════════════════════════════════════════════
-
-local isOpen = true
-local isAnimating = false
-
-function ToggleGUI()
-    if isAnimating then return end
-    isAnimating = true
-    
-    isOpen = not isOpen
-    
-    if isOpen then
-        MainFrame.Visible = true
-        MainFrame.Size = UDim2.new(0, 920, 0, 0)
-        MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
-        
-        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 920, 0, 560),
-            Position = UDim2.new(0.5, -460, 0.5, -280)
-        })
-        tween:Play()
-        tween.Completed:Wait()
-        
-        ClockSystem.isRunning = true
-        ToggleButton.ImageColor3 = Color3.fromRGB(200, 200, 210)
-    else
-        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-            Size = UDim2.new(0, 920, 0, 0),
-            Position = UDim2.new(0.5, -460, 0.5, 0)
-        })
-        tween:Play()
-        tween.Completed:Wait()
-        
-        MainFrame.Visible = false
-        ClockSystem.isRunning = false
-        ToggleButton.ImageColor3 = Color3.fromRGB(150, 150, 160)
-    end
-    
-    isAnimating = false
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 15. ARRASTO DO BOTÃO (PC E MOBILE)
--- ═══════════════════════════════════════════════════════════════
-
-local isDragging = false
-local dragStartPos = Vector2.new()
-local buttonStartPos = UDim2.new()
-local isDraggingActive = false
-local dragThreshold = 8
-
-local function getInputPosition(input)
-    if input.Position then
-        return Vector2.new(input.Position.X, input.Position.Y)
-    end
-    return Vector2.new(0, 0)
-end
-
-ToggleButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
-       input.UserInputType == Enum.UserInputType.Touch then
-        isDragging = true
-        isDraggingActive = false
-        dragStartPos = getInputPosition(input)
-        buttonStartPos = ToggleButton.Position
-        
-        TweenService:Create(ToggleButton, TweenInfo.new(0.1), {
-            Size = UDim2.new(0, 32, 0, 32)
-        }):Play()
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or 
-                       input.UserInputType == Enum.UserInputType.Touch) then
-        local currentPos = getInputPosition(input)
-        local delta = (currentPos - dragStartPos).Magnitude
-        
-        if delta > dragThreshold then
-            isDraggingActive = true
-            
-            local newX =
+    local total
