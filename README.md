@@ -1,8 +1,9 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - VERSÃO CORRIGIDA
+    CAR FLIPPER - GOMEZXITADO - VERSÃO MOBILE/PC
     Interface Premium com Layout Horizontal
-    TEcla "J" para abrir/fechar
+    ARRASTO FUNCIONANDO EM PC E MOBILE
+    Tecla "J" para abrir/fechar
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -78,13 +79,14 @@ function ClockSystem:GetCurrentDateTime()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. BOTÃO FLUTUANTE
+-- 4. BOTÃO FLUTUANTE (CORRIGIDO PARA MOBILE)
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "ToggleGUI"
 ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ToggleGui.ResetOnSpawn = false
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local ToggleButton = Instance.new("ImageButton")
 ToggleButton.Name = "ToggleButton"
@@ -102,6 +104,41 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
+-- Sombra do botão (para mobile também)
+local ToggleShadow = Instance.new("Frame")
+ToggleShadow.Name = "Shadow"
+ToggleShadow.Size = UDim2.new(1, 8, 1, 8)
+ToggleShadow.Position = UDim2.new(0, -4, 0, -4)
+ToggleShadow.BackgroundColor3 = Theme.Shadow
+ToggleShadow.BackgroundTransparency = 0.4
+ToggleShadow.BorderSizePixel = 0
+ToggleShadow.Parent = ToggleButton
+
+local ToggleShadowCorner = Instance.new("UICorner")
+ToggleShadowCorner.CornerRadius = UDim.new(0, 10)
+ToggleShadowCorner.Parent = ToggleShadow
+
+-- Tooltip (escondido no mobile)
+local Tooltip = Instance.new("TextLabel")
+Tooltip.Name = "Tooltip"
+Tooltip.Size = UDim2.new(0, 120, 0, 28)
+Tooltip.Position = UDim2.new(0, -130, 0.5, -14)
+Tooltip.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+Tooltip.BackgroundTransparency = 0.9
+Tooltip.Text = "Car Flipper"
+Tooltip.TextColor3 = Color3.fromRGB(220, 220, 230)
+Tooltip.TextSize = 12
+Tooltip.Font = Enum.Font.GothamMedium
+Tooltip.TextXAlignment = Enum.TextXAlignment.Center
+Tooltip.TextYAlignment = Enum.TextYAlignment.Center
+Tooltip.BorderSizePixel = 0
+Tooltip.Visible = false
+Tooltip.Parent = ToggleButton
+
+local TooltipCorner = Instance.new("UICorner")
+TooltipCorner.CornerRadius = UDim.new(0, 6)
+TooltipCorner.Parent = Tooltip
+
 -- ═══════════════════════════════════════════════════════════════
 -- 5. INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
@@ -110,6 +147,7 @@ local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "CarFlipperGUI"
 MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MainGui.ResetOnSpawn = false
+MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -124,6 +162,25 @@ MainFrame.Visible = true
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Theme.Border
+MainStroke.Thickness = 1.5
+MainStroke.Parent = MainFrame
+
+-- Sombra do MainFrame
+local Shadow = Instance.new("Frame")
+Shadow.Name = "Shadow"
+Shadow.Size = UDim2.new(1, 20, 1, 20)
+Shadow.Position = UDim2.new(0, -10, 0, -10)
+Shadow.BackgroundColor3 = Theme.Shadow
+Shadow.BackgroundTransparency = 0.5
+Shadow.BorderSizePixel = 0
+Shadow.Parent = MainFrame
+
+local ShadowCorner = Instance.new("UICorner")
+ShadowCorner.CornerRadius = UDim.new(0, 18)
+ShadowCorner.Parent = Shadow
 
 -- ═══════════════════════════════════════════════════════════════
 -- 6. BARRA DE TÍTULO
@@ -303,7 +360,7 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
     end
     
     container.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             state:Toggle()
         end
     end)
@@ -446,33 +503,53 @@ function ToggleGUI()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. EVENTOS DO BOTÃO (CORRIGIDO)
+-- 13. SISTEMA DE ARRASTO DO BOTÃO (CORRIGIDO PARA PC E MOBILE)
 -- ═══════════════════════════════════════════════════════════════
 
 local isDragging = false
-local dragStart = Vector2.new()
+local dragStartPos = Vector2.new()
 local buttonStartPos = UDim2.new()
-local dragThreshold = 5
 local isDraggingActive = false
+local dragThreshold = 8
 
-ToggleButton.MouseButton1Down:Connect(function(input)
-    isDragging = true
-    isDraggingActive = false
-    dragStart = Vector2.new(input.Position.X, input.Position.Y)
-    buttonStartPos = ToggleButton.Position
+-- Função para converter posição do input para Vector2
+local function getInputPosition(input)
+    if input.Position then
+        return Vector2.new(input.Position.X, input.Position.Y)
+    end
+    return Vector2.new(0, 0)
+end
+
+-- Início do arrasto (PC e Mobile)
+ToggleButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = true
+        isDraggingActive = false
+        dragStartPos = getInputPosition(input)
+        buttonStartPos = ToggleButton.Position
+        
+        -- Feedback visual
+        TweenService:Create(ToggleButton, TweenInfo.new(0.1), {
+            Size = UDim2.new(0, 32, 0, 32)
+        }):Play()
+    end
 end)
 
--- CORRIGIDO: Evento de movimento do mouse
-local function onInputChanged(input)
-    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local currentPos = Vector2.new(input.Position.X, input.Position.Y)
-        local delta = (currentPos - dragStart).Magnitude
+-- Movimento do arrasto (PC e Mobile)
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or 
+                       input.UserInputType == Enum.UserInputType.Touch) then
+        local currentPos = getInputPosition(input)
+        local delta = (currentPos - dragStartPos).Magnitude
         
         if delta > dragThreshold then
             isDraggingActive = true
-            local newX = buttonStartPos.X.Offset + (input.Position.X - dragStart.X)
-            local newY = buttonStartPos.Y.Offset + (input.Position.Y - dragStart.Y)
             
+            local newX = buttonStartPos.X.Offset + (currentPos.X - dragStartPos.X)
+            local newY = buttonStartPos.Y.Offset + (currentPos.Y - dragStartPos.Y)
+            
+            -- Limita dentro da tela
             local screenX = ToggleGui.AbsoluteSize.X
             local screenY = ToggleGui.AbsoluteSize.Y
             local buttonSize = 36
@@ -483,20 +560,29 @@ local function onInputChanged(input)
             ToggleButton.Position = UDim2.new(0, newX, 0, newY)
         end
     end
-end
+end)
 
-UserInputService.InputChanged:Connect(onInputChanged)
-
-ToggleButton.MouseButton1Up:Connect(function(input)
-    if not isDraggingActive and isDragging then
-        ToggleGUI()
+-- Fim do arrasto (PC e Mobile)
+ToggleButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        -- Feedback visual
+        TweenService:Create(ToggleButton, TweenInfo.new(0.1), {
+            Size = UDim2.new(0, 36, 0, 36)
+        }):Play()
+        
+        -- Se não arrastou, é um clique
+        if not isDraggingActive and isDragging then
+            ToggleGUI()
+        end
+        
+        isDragging = false
+        isDraggingActive = false
     end
-    isDragging = false
-    isDraggingActive = false
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. ARRASTAR DO PAINEL
+-- 14. ARRASTAR DO PAINEL (CORRIGIDO PARA PC E MOBILE)
 -- ═══════════════════════════════════════════════════════════════
 
 local DraggingPanel = false
@@ -504,22 +590,19 @@ local DragPanelStart = Vector2.new()
 local StartPanelPos = UDim2.new()
 
 TitleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
         DraggingPanel = true
         DragPanelStart = Vector2.new(input.Position.X, input.Position.Y)
         StartPanelPos = MainFrame.Position
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and DraggingPanel then
-        DraggingPanel = false
-    end
-end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if DraggingPanel and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = Vector2.new(input.Position.X - DragPanelStart.X, input.Position.Y - DragPanelStart.Y)
+    if DraggingPanel and (input.UserInputType == Enum.UserInputType.MouseMovement or 
+                          input.UserInputType == Enum.UserInputType.Touch) then
+        local currentPos = Vector2.new(input.Position.X, input.Position.Y)
+        local delta = currentPos - DragPanelStart
         MainFrame.Position = UDim2.new(
             StartPanelPos.X.Scale,
             StartPanelPos.X.Offset + delta.X,
@@ -529,14 +612,20 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+TitleBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        DraggingPanel = false
+    end
+end)
+
 -- ═══════════════════════════════════════════════════════════════
--- 15. TECLA "J" PARA ABRIR/FECHAR (CORRIGIDO)
+-- 15. TECLA "J" PARA ABRIR/FECHAR
 -- ═══════════════════════════════════════════════════════════════
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
-    -- Tecla "J" para abrir/fechar
     if input.KeyCode == Enum.KeyCode.J then
         ToggleGUI()
     end
@@ -615,9 +704,9 @@ print("║     🚗 CAR FLIPPER - GOMEZXITADO CARREGADO!              ║")
 print("║                                                           ║")
 print("║  ✅ Interface aberta automaticamente                      ║")
 print("║  📌 Clique no botão preto para abrir/fechar              ║")
-print("║  🖱️ Arraste o botão para qualquer lugar da tela          ║")
+print("║  🖱️ Arraste o botão para qualquer lugar (PC/MOBILE)     ║")
 print("║  ⌨️  Tecla 'J' para abrir/fechar                         ║")
-print("║  🔄 Funciona INFINITAS vezes                             ║")
+print("║  📱 Totalmente compatível com MOBILE                     ║")
 print("║                                                           ║")
 print("║  📌 Use _G.CarFlipper para controlar                     ║")
 print("╚═══════════════════════════════════════════════════════════╝")
