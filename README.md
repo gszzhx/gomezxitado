@@ -2,7 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
     Busca automática pelo prompt/botão "Dinheiro Coletar" + Coleta automática
-    VERSÃO COM ESPAÇAMENTO DINÂMICO
+    VERSÃO COM TEMPO DE 0.3s ATÉ 5 MINUTOS
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -68,7 +68,7 @@ end
 
 local ClaimCash = {
     enabled = false,
-    interval = 5,
+    interval = 5, -- segundos
     task = nil,
     isRunning = false,
     collectRadius = 10,
@@ -347,7 +347,13 @@ local function ClaimCashLoop()
         end
 
         local waitTime = ClaimCash.interval
-        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f s", waitTime))
+        if waitTime >= 60 then
+            local minutes = math.floor(waitTime / 60)
+            local seconds = waitTime % 60
+            UpdateStatus(string.format("[Car Flipper] Próxima coleta em %dmin %ds", minutes, seconds))
+        else
+            UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f s", waitTime))
+        end
 
         local startTime = tick()
         while ClaimCash.enabled and ClaimCash.isRunning and (tick() - startTime) < waitTime do
@@ -596,12 +602,11 @@ Canvas.Parent = ContentContainer
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
-local allCheckboxStates = {} -- Armazena todos os estados para ajuste dinâmico
+local allCheckboxStates = {}
 
 local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider, index, sectionName)
     local container = Instance.new("Frame")
     container.Name = name .. "Container"
-    -- Altura inicial: 30px quando desativado, 70px quando ativado
     container.Size = UDim2.new(0, 165, 0, 30)
     container.Position = UDim2.new(xPos, 0, 0, yPos)
     container.BackgroundTransparency = 1
@@ -656,6 +661,7 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
     local sliderFill = nil
     local sliderThumb = nil
     local valueInput = nil
+    local secondsLabel = nil
 
     if hasSlider then
         sliderContainer = Instance.new("Frame")
@@ -674,7 +680,7 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 
         local sliderBg = Instance.new("Frame")
         sliderBg.Name = "SliderBg"
-        sliderBg.Size = UDim2.new(0.7, -5, 0, 4)
+        sliderBg.Size = UDim2.new(0.65, -5, 0, 4)
         sliderBg.Position = UDim2.new(0, 5, 0.5, -2)
         sliderBg.BackgroundColor3 = Theme.SurfaceLight
         sliderBg.BorderSizePixel = 0
@@ -708,10 +714,18 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         thumbCorner.CornerRadius = UDim.new(1, 0)
         thumbCorner.Parent = sliderThumb
 
+        -- Container para o valor e label "s" com espaçamento
+        local valueContainer = Instance.new("Frame")
+        valueContainer.Name = "ValueContainer"
+        valueContainer.Size = UDim2.new(0.32, 0, 0.8, 0)
+        valueContainer.Position = UDim2.new(0.68, 2, 0.1, 0)
+        valueContainer.BackgroundTransparency = 1
+        valueContainer.Parent = sliderContainer
+
         valueInput = Instance.new("TextBox")
         valueInput.Name = "ValueInput"
-        valueInput.Size = UDim2.new(0.28, 0, 0.7, 0)
-        valueInput.Position = UDim2.new(0.72, 0, 0.15, 0)
+        valueInput.Size = UDim2.new(0.65, 0, 1, 0)
+        valueInput.Position = UDim2.new(0, 0, 0, 0)
         valueInput.BackgroundColor3 = Theme.InputBG
         valueInput.BorderSizePixel = 0
         valueInput.Text = "5.0"
@@ -721,16 +735,16 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         valueInput.TextXAlignment = Enum.TextXAlignment.Center
         valueInput.TextYAlignment = Enum.TextYAlignment.Center
         valueInput.ClearTextOnFocus = false
-        valueInput.Parent = sliderContainer
+        valueInput.Parent = valueContainer
 
         local inputCorner = Instance.new("UICorner")
         inputCorner.CornerRadius = UDim.new(0, 4)
         inputCorner.Parent = valueInput
 
-        local secondsLabel = Instance.new("TextLabel")
+        secondsLabel = Instance.new("TextLabel")
         secondsLabel.Name = "SecondsLabel"
-        secondsLabel.Size = UDim2.new(0, 12, 0.7, 0)
-        secondsLabel.Position = UDim2.new(1, 0, 0.15, 0)
+        secondsLabel.Size = UDim2.new(0.3, 2, 1, 0)
+        secondsLabel.Position = UDim2.new(0.65, 2, 0, 0)
         secondsLabel.BackgroundTransparency = 1
         secondsLabel.Text = "s"
         secondsLabel.TextColor3 = Theme.TextMuted
@@ -738,12 +752,26 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         secondsLabel.Font = Enum.Font.Gotham
         secondsLabel.TextXAlignment = Enum.TextXAlignment.Left
         secondsLabel.TextYAlignment = Enum.TextYAlignment.Center
-        secondsLabel.Parent = sliderContainer
+        secondsLabel.Parent = valueContainer
 
         local minValue = 0.3
-        local maxValue = 5.0
+        local maxValue = 300 -- 5 minutos em segundos
         local currentValue = 5.0
         local isDraggingSlider = false
+
+        local function FormatTimeValue(value)
+            if value >= 60 then
+                local minutes = math.floor(value / 60)
+                local seconds = value % 60
+                if seconds == 0 then
+                    return string.format("%dm", minutes)
+                else
+                    return string.format("%dm%ds", minutes, seconds)
+                end
+            else
+                return string.format("%.1f", value)
+            end
+        end
 
         local function UpdateSlider(value)
             currentValue = math.max(minValue, math.min(maxValue, value))
@@ -752,11 +780,11 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             sliderFill.Size = UDim2.new(percent, 0, 1, 0)
             sliderThumb.Position = UDim2.new(percent, -7, 0.5, -7)
 
-            local rounded = math.floor(currentValue * 10 + 0.5) / 10
-            valueInput.Text = string.format("%.1f", rounded)
+            local displayText = FormatTimeValue(currentValue)
+            valueInput.Text = displayText
 
             if name == "ClaimCash" then
-                ClaimCash.interval = rounded
+                ClaimCash.interval = currentValue
             end
         end
 
@@ -798,13 +826,46 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 
         valueInput.FocusLost:Connect(function(enterPressed)
             local text = valueInput.Text:gsub(",", ".")
-            local num = tonumber(text)
+            
+            -- Tenta parsear vários formatos: "5", "5.5", "1m30s", "2m", "30s"
+            local num = nil
+            
+            -- Tenta converter diretamente
+            num = tonumber(text)
+            
+            -- Se não for número, tenta parsear formato com m/s
+            if not num then
+                local minutes = 0
+                local seconds = 0
+                
+                -- Procura por minutos
+                local mStart, mEnd = text:find("(%d+)m")
+                if mStart then
+                    minutes = tonumber(text:sub(mStart, mEnd-1)) or 0
+                end
+                
+                -- Procura por segundos
+                local sStart, sEnd = text:find("(%d+)s")
+                if sStart then
+                    seconds = tonumber(text:sub(sStart, sEnd-1)) or 0
+                end
+                
+                -- Se não achou nada com m ou s, tenta só números
+                if minutes == 0 and seconds == 0 then
+                    local numOnly = text:match("^(%d+%.?%d*)$")
+                    if numOnly then
+                        num = tonumber(numOnly)
+                    end
+                else
+                    num = minutes * 60 + seconds
+                end
+            end
             
             if num then
                 num = math.max(minValue, math.min(maxValue, num))
                 UpdateSlider(num)
             else
-                valueInput.Text = string.format("%.1f", currentValue)
+                valueInput.Text = FormatTimeValue(currentValue)
             end
         end)
 
@@ -839,12 +900,10 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
                 sliderContainer.Visible = true
                 sliderContainer.BackgroundTransparency = 0
                 
-                -- Expande o container para 70px
                 TweenService:Create(state.container, TweenInfo.new(0.3), {
                     Size = UDim2.new(0, 165, 0, 70)
                 }):Play()
 
-                -- Reorganiza os itens abaixo
                 if state.isClaimCash then
                     ReorganizeItems()
                 end
@@ -860,7 +919,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             state.checkIcon.Visible = false
 
             if state.hasSlider and sliderContainer then
-                -- Recolhe o container para 30px
                 TweenService:Create(state.container, TweenInfo.new(0.3), {
                     Size = UDim2.new(0, 165, 0, 30)
                 }):Play()
@@ -871,7 +929,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
                 task.wait(0.3)
                 sliderContainer.Visible = false
 
-                -- Reorganiza os itens abaixo
                 if state.isClaimCash then
                     ReorganizeItems()
                 end
@@ -900,7 +957,6 @@ end
 -- ═══════════════════════════════════════════════════════════════
 
 function ReorganizeItems()
-    -- Agrupa os estados por seção
     local sections = {}
     for _, state in ipairs(allCheckboxStates) do
         if not sections[state.sectionName] then
@@ -909,22 +965,19 @@ function ReorganizeItems()
         table.insert(sections[state.sectionName], state)
     end
 
-    -- Para cada seção, reorganiza as posições
     for sectionName, states in pairs(sections) do
-        -- Ordena pelo index original
         table.sort(states, function(a, b) return a.index < b.index end)
         
         local yCursor = 48
         for _, state in ipairs(states) do
-            local height = 30 -- altura padrão
+            local height = 30
             if state.checked and state.hasSlider then
-                height = 70 -- altura com slider visível
+                height = 70
             end
             state.container.Position = UDim2.new(0, 0, 0, yCursor)
             yCursor = yCursor + height + 10
         end
         
-        -- Atualiza o tamanho da seção
         local sectionContainer = states[1].parent
         if sectionContainer then
             sectionContainer.Size = UDim2.new(0, 280, 0, yCursor + 6)
@@ -1036,10 +1089,7 @@ for i, sectionData in ipairs(SectionsData) do
             sectionData.title
         )
         
-        -- Salva o container da seção no state para reorganização
         state.parent = sectionContainer
-        
-        -- Altura inicial: 30px (sem slider visível)
         yCursor = yCursor + 30 + 10
     end
 
@@ -1223,5 +1273,6 @@ print("✅ Car Flipper - GomezXitado carregado!")
 print("📌 Clique no botão preto para abrir/fechar")
 print("⌨️  Tecla 'J' para abrir/fechar")
 print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
-print("⏱️  Clique no número para ajustar o tempo (0.3s a 5s)")
+print("⏱️  Range: 0.3s até 5 minutos (300s)")
+print("📝 Digite: '5', '1.5', '1m30s', '2m', '30s'")
 print("📐 Espaçamento dinâmico: o slider só aparece quando ativado!")
