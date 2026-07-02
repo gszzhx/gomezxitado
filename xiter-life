@@ -1,8 +1,7 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
-    Busca automática pelo prompt/botão "Dinheiro Coletar" + Coleta automática
-    VERSÃO COM TEMPO DE 0.3s ATÉ 5 MINUTOS
+    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM PARTS AUTOMÁTICO
+    Coleta automática de peças a cada 1 minuto e 42 segundos
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -18,10 +17,11 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 -- ═══════════════════════════════════════════════════════════════
--- 2. CONFIGURAÇÕES DO CLAIM CASH
+-- 2. CONFIGURAÇÕES DOS SISTEMAS
 -- ═══════════════════════════════════════════════════════════════
 
 local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money"}
+local PARTS_KEYWORDS = {"peças", "parts", "pecas", "peça", "part"}
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. TEMA
@@ -63,16 +63,382 @@ local function UpdateStatus(text)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. SISTEMA CLAIM CASH (estado)
+-- 5. SISTEMA DE INTERRUPÇÃO (PRIORIDADE)
+-- ═══════════════════════════════════════════════════════════════
+
+local InterruptionSystem = {
+    isInterrupted = false,
+    interruptedTask = nil,
+    originalTask = nil,
+    resumeCallback = nil,
+}
+
+function InterruptionSystem:Interrupt(taskName, callback)
+    if self.isInterrupted then
+        return false
+    end
+    
+    self.isInterrupted = true
+    self.interruptedTask = taskName
+    self.resumeCallback = callback
+    
+    UpdateStatus(string.format("[Car Flipper] ⚠️ Interrompido para: %s", taskName))
+    return true
+end
+
+function InterruptionSystem:Resume()
+    if not self.isInterrupted then
+        return
+    end
+    
+    self.isInterrupted = false
+    local callback = self.resumeCallback
+    self.resumeCallback = nil
+    self.interruptedTask = nil
+    
+    if callback then
+        UpdateStatus("[Car Flipper] 🔄 Retomando atividade...")
+        callback()
+    end
+end
+
+function InterruptionSystem:IsInterrupted()
+    return self.isInterrupted
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 6. SISTEMA CLAIM PARTS (COM PRIORIDADE)
+-- ═══════════════════════════════════════════════════════════════
+
+local ClaimParts = {
+    enabled = false,
+    interval = 102, -- 1 minuto e 42 segundos
+    task = nil,
+    isRunning = false,
+    collectRadius = 15,
+    currentActivity = nil,
+}
+
+local function MatchesPartsKeyword(text)
+    if not text then return false end
+    text = text:lower()
+    for _, keyword in ipairs(PARTS_KEYWORDS) do
+        if text:find(keyword) then
+            return true
+        end
+    end
+    return false
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 7. SISTEMA CLAIM CASH (estado)
 -- ═══════════════════════════════════════════════════════════════
 
 local ClaimCash = {
     enabled = false,
-    interval = 5, -- segundos
+    interval = 5,
     task = nil,
     isRunning = false,
     collectRadius = 10,
 }
+
+-- ═══════════════════════════════════════════════════════════════
+-- 8. FUNÇÕES DE COLETA DE PEÇAS
+-- ═══════════════════════════════════════════════════════════════
+
+local function FindPartsPrompt()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            local text = obj.ObjectText or ""
+            if MatchesPartsKeyword(text) then
+                return obj
+            end
+        end
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            local text = obj.ActionText or ""
+            if MatchesPartsKeyword(text) then
+                return obj
+            end
+        end
+    end
+    return nil
+end
+
+local function FindPartsButton()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return nil end
+
+    for _, gui in ipairs(playerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            for _, btn in ipairs(gui:GetDescendants()) do
+                if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                    if MatchesPartsKeyword(btn.Text) then
+                        return btn
+                    end
+                    for _, child in ipairs(btn:GetDescendants()) do
+                        if child:IsA("TextLabel") and MatchesPartsKeyword(child.Text) then
+                            return btn
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function FindPartsInWorld()
+    local partsList = {}
+    local character = LocalPlayer.Character
+    if not character then return partsList end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return partsList end
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        local isPart = false
+        local objName = obj.Name:lower()
+
+        if objName:find("peça") or
+           objName:find("parts") or
+           objName:find("part") or
+           objName:find("peca") or
+           objName:find("component") or
+           objName:find("engrenagem") or
+           objName:find("gear") then
+            isPart = true
+        end
+
+        if isPart and (obj:IsA("Part") or obj:IsA("Model") or obj:IsA("BasePart") or obj:IsA("MeshPart")) then
+            local position = nil
+            if obj:IsA("Model") and obj.PrimaryPart then
+                position = obj.PrimaryPart.Position
+            elseif obj:IsA("BasePart") then
+                position = obj.Position
+            end
+
+            if position then
+                local distance = (position - humanoidRootPart.Position).Magnitude
+                if distance < ClaimParts.collectRadius then
+                    table.insert(partsList, obj)
+                end
+            end
+        end
+    end
+    
+    return partsList
+end
+
+local function GoToPartsLocation(part)
+    local character = LocalPlayer.Character
+    if not character then return false end
+
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+
+    local targetPart = part
+    if part:IsA("Model") and part.PrimaryPart then
+        targetPart = part.PrimaryPart
+    end
+
+    if not targetPart or not targetPart:IsA("BasePart") then
+        return false
+    end
+
+    humanoidRootPart.CFrame = targetPart.CFrame * CFrame.new(0, 2, 3)
+    task.wait(0.3)
+    return true
+end
+
+local function CollectParts()
+    if not ClaimParts.enabled then return false end
+    
+    -- Interrompe qualquer atividade atual para coletar peças
+    if InterruptionSystem:IsInterrupted() then
+        return false
+    end
+    
+    UpdateStatus("[Car Flipper] 🔧 Procurando peças...")
+
+    -- Tenta encontrar prompt primeiro
+    local prompt = FindPartsPrompt()
+    if prompt then
+        local parent = prompt.Parent
+        if parent then
+            local success = GoToPartsLocation(parent)
+            if success then
+                UpdateStatus("[Car Flipper] 🔧 Coletando peças...")
+                local ok = pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(prompt)
+                    else
+                        prompt:InputHold()
+                        task.wait(0.15)
+                        prompt:InputRelease()
+                    end
+                end)
+                if ok then
+                    UpdateStatus("[Car Flipper] ✅ Peças coletadas!")
+                    return true
+                end
+            end
+        end
+    end
+
+    -- Tenta botão na UI
+    local button = FindPartsButton()
+    if button then
+        UpdateStatus("[Car Flipper] 🔧 Coletando peças (botão)...")
+        local ok = pcall(function()
+            button:Click()
+        end)
+        if ok then
+            UpdateStatus("[Car Flipper] ✅ Peças coletadas!")
+            return true
+        end
+    end
+
+    -- Tenta objetos no mundo
+    local parts = FindPartsInWorld()
+    if #parts > 0 then
+        for _, part in ipairs(parts) do
+            if part and part.Parent then
+                local success = pcall(function()
+                    GoToPartsLocation(part)
+                    
+                    local clickDetector = part:FindFirstChild("ClickDetector")
+                    if clickDetector then
+                        clickDetector:Click()
+                        return
+                    end
+
+                    local proximityPrompt = part:FindFirstChild("ProximityPrompt")
+                    if proximityPrompt then
+                        proximityPrompt:InputHold()
+                        task.wait(0.1)
+                        proximityPrompt:InputRelease()
+                        return
+                    end
+
+                    if part:IsA("BasePart") or part:IsA("Model") then
+                        part:Destroy()
+                        return
+                    end
+                end)
+                if success then
+                    UpdateStatus("[Car Flipper] ✅ Peças coletadas!")
+                    return true
+                end
+            end
+        end
+    end
+
+    UpdateStatus("[Car Flipper] ❌ Nenhuma peça encontrada...")
+    return false
+end
+
+local function ClaimPartsLoop()
+    while ClaimParts.enabled and ClaimParts.isRunning do
+        -- Verifica se deve interromper a atividade atual
+        if not InterruptionSystem:IsInterrupted() then
+            -- Interrompe qualquer atividade atual (exceto outras coletas prioritárias)
+            if ClaimParts.currentActivity then
+                InterruptionSystem:Interrupt("Coletar Peças", function()
+                    -- Callback para retomar após coleta
+                end)
+            end
+            
+            -- Coleta as peças
+            local collectSuccess = false
+            for attempt = 1, 3 do
+                collectSuccess = CollectParts()
+                if collectSuccess then break end
+                task.wait(0.5)
+            end
+
+            if not collectSuccess then
+                UpdateStatus("[Car Flipper] ⏳ Nenhuma peça disponível...")
+            end
+            
+            -- Resumo da atividade
+            if collectSuccess then
+                UpdateStatus("[Car Flipper] ✅ Peças coletadas com sucesso!")
+            end
+        end
+
+        -- Calcula tempo de espera
+        local waitTime = ClaimParts.interval
+        local minutes = math.floor(waitTime / 60)
+        local seconds = waitTime % 60
+        UpdateStatus(string.format("[Car Flipper] ⏱️ Próxima coleta de peças em %dm %ds", minutes, seconds))
+
+        -- Aguarda com possibilidade de interrupção
+        local startTime = tick()
+        while ClaimParts.enabled and ClaimParts.isRunning and (tick() - startTime) < waitTime do
+            task.wait(0.1)
+            -- Se foi interrompido por outra atividade, espera
+            if InterruptionSystem:IsInterrupted() then
+                -- Não faz nada, apenas espera
+            end
+        end
+        
+        -- Se foi interrompido, não reseta o loop
+        if InterruptionSystem:IsInterrupted() then
+            -- Aguarda até ser retomado
+            while InterruptionSystem:IsInterrupted() and ClaimParts.enabled do
+                task.wait(0.1)
+            end
+        end
+    end
+
+    ClaimParts.isRunning = false
+    if not ClaimParts.enabled then
+        UpdateStatus("[Car Flipper] 🔧 Claim Parts parado")
+    end
+end
+
+local function StartClaimParts()
+    if ClaimParts.isRunning then return end
+    if not ClaimParts.enabled then return end
+
+    ClaimParts.isRunning = true
+    UpdateStatus("[Car Flipper] 🔧 Claim Parts iniciado")
+
+    ClaimParts.task = task.spawn(ClaimPartsLoop)
+end
+
+local function StopClaimParts()
+    ClaimParts.enabled = false
+    ClaimParts.isRunning = false
+
+    if ClaimParts.task then
+        task.cancel(ClaimParts.task)
+        ClaimParts.task = nil
+    end
+
+    -- Restaura interrupção se necessário
+    if InterruptionSystem:IsInterrupted() then
+        InterruptionSystem:Resume()
+    end
+
+    UpdateStatus("[Car Flipper] 🔧 Claim Parts parado")
+end
+
+local function ToggleClaimParts()
+    ClaimParts.enabled = not ClaimParts.enabled
+
+    if ClaimParts.enabled then
+        StartClaimParts()
+    else
+        StopClaimParts()
+    end
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 9. FUNÇÕES DE COLETA DE DINHEIRO (original)
+-- ═══════════════════════════════════════════════════════════════
 
 local function MatchesMoneyKeyword(text)
     if not text then return false end
@@ -85,9 +451,44 @@ local function MatchesMoneyKeyword(text)
     return false
 end
 
--- ═══════════════════════════════════════════════════════════════
--- 6. FUNÇÕES DE COLETA DE DINHEIRO
--- ═══════════════════════════════════════════════════════════════
+local function FindMoneyPrompt()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            if MatchesMoneyKeyword(obj.ObjectText) then
+                return obj
+            end
+        end
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and MatchesMoneyKeyword(obj.ActionText) then
+            return obj
+        end
+    end
+    return nil
+end
+
+local function FindMoneyButton()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return nil end
+
+    for _, gui in ipairs(playerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            for _, btn in ipairs(gui:GetDescendants()) do
+                if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                    if MatchesMoneyKeyword(btn.Text) then
+                        return btn
+                    end
+                    for _, child in ipairs(btn:GetDescendants()) do
+                        if child:IsA("TextLabel") and MatchesMoneyKeyword(child.Text) then
+                            return btn
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
 
 local function FindAndCollectCash()
     local character = LocalPlayer.Character
@@ -221,45 +622,6 @@ local function FindAndCollectCash()
     return collected
 end
 
-local function FindMoneyPrompt()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            if MatchesMoneyKeyword(obj.ObjectText) then
-                return obj
-            end
-        end
-    end
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and MatchesMoneyKeyword(obj.ActionText) then
-            return obj
-        end
-    end
-    return nil
-end
-
-local function FindMoneyButton()
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return nil end
-
-    for _, gui in ipairs(playerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") then
-            for _, btn in ipairs(gui:GetDescendants()) do
-                if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-                    if MatchesMoneyKeyword(btn.Text) then
-                        return btn
-                    end
-                    for _, child in ipairs(btn:GetDescendants()) do
-                        if child:IsA("TextLabel") and MatchesMoneyKeyword(child.Text) then
-                            return btn
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
-
 local function GoToPrompt(prompt)
     local character = LocalPlayer.Character
     if not character then return false end
@@ -335,6 +697,14 @@ end
 
 local function ClaimCashLoop()
     while ClaimCash.enabled and ClaimCash.isRunning do
+        -- Se estiver coletando peças (prioridade), espera
+        if ClaimParts.enabled and ClaimParts.isRunning then
+            UpdateStatus("[Car Flipper] ⏳ Aguardando coleta de peças...")
+            while ClaimParts.enabled and ClaimParts.isRunning do
+                task.wait(0.5)
+            end
+        end
+        
         local collectSuccess = false
         for attempt = 1, 3 do
             collectSuccess = CollectCash()
@@ -400,7 +770,7 @@ local function ToggleClaimCash()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. RELÓGIO
+-- 10. RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 local ClockSystem = {
@@ -440,7 +810,7 @@ function ClockSystem:GetCurrentDateTime()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. BOTÃO FLUTUANTE
+-- 11. BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
@@ -466,7 +836,7 @@ ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. INTERFACE PRINCIPAL
+-- 12. INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local MainGui = Instance.new("ScreenGui")
@@ -495,7 +865,7 @@ MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. BARRA DE TÍTULO
+-- 13. BARRA DE TÍTULO
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
@@ -536,7 +906,7 @@ DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
 DateTimeText.Parent = TitleBar
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. ABA AUTO
+-- 14. ABA AUTO
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
@@ -563,7 +933,7 @@ AutoTabCorner.CornerRadius = UDim.new(0, 8)
 AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. STATUS
+-- 15. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
 StatusLabel = Instance.new("TextLabel")
@@ -580,7 +950,7 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. CONTEÚDO
+-- 16. CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
@@ -598,7 +968,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. CHECKBOXES COM INPUT EDITÁVEL E ESPAÇAMENTO DINÂMICO
+-- 17. CHECKBOXES COM INPUT EDITÁVEL E ESPAÇAMENTO DINÂMICO
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -714,7 +1084,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         thumbCorner.CornerRadius = UDim.new(1, 0)
         thumbCorner.Parent = sliderThumb
 
-        -- Container para o valor e label "s" com espaçamento
         local valueContainer = Instance.new("Frame")
         valueContainer.Name = "ValueContainer"
         valueContainer.Size = UDim2.new(0.32, 0, 0.8, 0)
@@ -755,7 +1124,7 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         secondsLabel.Parent = valueContainer
 
         local minValue = 0.3
-        local maxValue = 300 -- 5 minutos em segundos
+        local maxValue = 300
         local currentValue = 5.0
         local isDraggingSlider = false
 
@@ -785,6 +1154,8 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 
             if name == "ClaimCash" then
                 ClaimCash.interval = currentValue
+            elseif name == "ClaimParts" then
+                ClaimParts.interval = currentValue
             end
         end
 
@@ -827,30 +1198,23 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         valueInput.FocusLost:Connect(function(enterPressed)
             local text = valueInput.Text:gsub(",", ".")
             
-            -- Tenta parsear vários formatos: "5", "5.5", "1m30s", "2m", "30s"
             local num = nil
-            
-            -- Tenta converter diretamente
             num = tonumber(text)
             
-            -- Se não for número, tenta parsear formato com m/s
             if not num then
                 local minutes = 0
                 local seconds = 0
                 
-                -- Procura por minutos
                 local mStart, mEnd = text:find("(%d+)m")
                 if mStart then
                     minutes = tonumber(text:sub(mStart, mEnd-1)) or 0
                 end
                 
-                -- Procura por segundos
                 local sStart, sEnd = text:find("(%d+)s")
                 if sStart then
                     seconds = tonumber(text:sub(sStart, sEnd-1)) or 0
                 end
                 
-                -- Se não achou nada com m ou s, tenta só números
                 if minutes == 0 and seconds == 0 then
                     local numOnly = text:match("^(%d+%.?%d*)$")
                     if numOnly then
@@ -869,6 +1233,12 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             end
         end)
 
+        -- Define valor inicial para Claim Parts (102 segundos = 1m42s)
+        if name == "ClaimParts" then
+            currentValue = 102
+            UpdateSlider(102)
+        end
+
         UpdateSlider(currentValue)
     end
 
@@ -885,6 +1255,7 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         index = index,
         parent = parent,
         isClaimCash = (name == "ClaimCash"),
+        isClaimParts = (name == "ClaimParts"),
     }
 
     function state:Toggle()
@@ -906,10 +1277,14 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 
                 if state.isClaimCash then
                     ReorganizeItems()
+                elseif state.isClaimParts then
+                    ReorganizeItems()
                 end
 
                 if state.name == "ClaimCash" then
                     ToggleClaimCash()
+                elseif state.name == "ClaimParts" then
+                    ToggleClaimParts()
                 end
             end
         else
@@ -931,10 +1306,14 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 
                 if state.isClaimCash then
                     ReorganizeItems()
+                elseif state.isClaimParts then
+                    ReorganizeItems()
                 end
 
                 if state.name == "ClaimCash" then
                     ToggleClaimCash()
+                elseif state.name == "ClaimParts" then
+                    ToggleClaimParts()
                 end
             end
         end
@@ -953,7 +1332,7 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. REORGANIZAÇÃO DINÂMICA DOS ITENS
+-- 18. REORGANIZAÇÃO DINÂMICA DOS ITENS
 -- ═══════════════════════════════════════════════════════════════
 
 function ReorganizeItems()
@@ -986,7 +1365,7 @@ function ReorganizeItems()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. SEÇÕES
+-- 19. SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local SectionsData = {
@@ -994,7 +1373,7 @@ local SectionsData = {
         title = "Base",
         items = {
             {name = "Claim Cash", hasSlider = true},
-            "Claim Parts",
+            {name = "Claim Parts", hasSlider = true},
             "Buy Upgrades",
             "Claim Containers",
             "Open Containers",
@@ -1099,7 +1478,7 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 17. TOGGLE DO PAINEL
+-- 20. TOGGLE DO PAINEL
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true
@@ -1136,7 +1515,7 @@ local function ToggleGUI()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 18. ARRASTO DO BOTÃO FLUTUANTE
+-- 21. ARRASTO DO BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local dragging = false
@@ -1180,7 +1559,7 @@ ToggleButton.InputEnded:Connect(function(i)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 19. ARRASTO DO PAINEL PRINCIPAL
+-- 22. ARRASTO DO PAINEL PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local panelDrag = false
@@ -1210,7 +1589,7 @@ TitleBar.InputEnded:Connect(function(i)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 20. TECLA "J" PARA ABRIR/FECHAR
+-- 23. TECLA "J" PARA ABRIR/FECHAR
 -- ═══════════════════════════════════════════════════════════════
 
 UserInputService.InputBegan:Connect(function(i, gameProcessed)
@@ -1221,7 +1600,7 @@ UserInputService.InputBegan:Connect(function(i, gameProcessed)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 21. ATUALIZAÇÃO DO RELÓGIO
+-- 24. ATUALIZAÇÃO DO RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 RunService.Heartbeat:Connect(function()
@@ -1232,7 +1611,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 22. API GLOBAL
+-- 25. API GLOBAL
 -- ═══════════════════════════════════════════════════════════════
 
 _G.CarFlipper = {
@@ -1240,19 +1619,35 @@ _G.CarFlipper = {
     Open = function() if not isOpen then ToggleGUI() end end,
     Close = function() if isOpen then ToggleGUI() end end,
     IsOpen = function() return isOpen end,
+    
+    -- Claim Cash
     StartClaimCash = StartClaimCash,
     StopClaimCash = StopClaimCash,
     ToggleClaimCash = ToggleClaimCash,
     IsClaimCashRunning = function() return ClaimCash.isRunning end,
-    SetInterval = function(interval) ClaimCash.interval = interval end,
+    SetCashInterval = function(interval) ClaimCash.interval = interval end,
+    
+    -- Claim Parts (NOVO)
+    StartClaimParts = StartClaimParts,
+    StopClaimParts = StopClaimParts,
+    ToggleClaimParts = ToggleClaimParts,
+    IsClaimPartsRunning = function() return ClaimParts.isRunning end,
+    SetPartsInterval = function(interval) ClaimParts.interval = interval end,
+    
+    -- Interruption System
+    IsInterrupted = function() return InterruptionSystem:IsInterrupted() end,
+    Interrupt = function(task, callback) return InterruptionSystem:Interrupt(task, callback) end,
+    Resume = function() InterruptionSystem:Resume() end,
+    
     AddMoneyKeyword = function(word) table.insert(MONEY_PROMPT_KEYWORDS, word:lower()) end,
+    AddPartsKeyword = function(word) table.insert(PARTS_KEYWORDS, word:lower()) end,
     GetStatus = function() return StatusLabel and StatusLabel.Text or "" end,
     SetStatus = function(text) UpdateStatus(text) end,
     Reorganize = ReorganizeItems,
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 23. ANIMAÇÃO DE ENTRADA
+-- 26. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 task.wait(0.1)
@@ -1266,13 +1661,15 @@ TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 24. FINAL
+-- 27. FINAL
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado!")
 print("📌 Clique no botão preto para abrir/fechar")
 print("⌨️  Tecla 'J' para abrir/fechar")
 print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
+print("🔧 Ative 'Claim Parts' para coletar peças automático (1m42s)")
 print("⏱️  Range: 0.3s até 5 minutos (300s)")
 print("📝 Digite: '5', '1.5', '1m30s', '2m', '30s'")
 print("📐 Espaçamento dinâmico: o slider só aparece quando ativado!")
+print("⚡ Claim Parts tem PRIORIDADE sobre outras atividades!")
