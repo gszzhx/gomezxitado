@@ -2,8 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO
     Interface Premium com Layout Horizontal
-    CORRIGIDO: Checkboxes e elementos visíveis
-    SINCRONIZADO: Relógio em Tempo Real
+    CORRIGIDO: Checkboxes e Relógio em Tempo Real
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -47,37 +46,34 @@ local Theme = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 3. SISTEMA DE RELÓGIO EM TEMPO REAL
+-- 3. SISTEMA DE RELÓGIO EM TEMPO REAL (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
 local ClockSystem = {
     currentTime = "",
-    currentDate = "",
+    lastUpdate = 0,
+    updateInterval = 1, -- Atualiza a cada 1 segundo
+    isRunning = true,
 }
 
 -- Função para obter data/hora atual
 function ClockSystem:GetCurrentDateTime()
-    -- Tenta obter hora do sistema
+    -- Tenta obter hora do sistema via API
     local success, result = pcall(function()
-        -- Usa HttpService para obter data/hora atual
         local response = HttpService:GetAsync("https://worldtimeapi.org/api/timezone/America/Sao_Paulo")
         if response then
             local data = HttpService:JSONDecode(response)
             if data and data.datetime then
                 local datetime = data.datetime
-                -- Formato: 2026-07-01T22:13:00.000-03:00
                 local parts = {}
                 for part in string.gmatch(datetime, "[^T]+") do
                     table.insert(parts, part)
                 end
                 
                 if #parts >= 2 then
-                    local datePart = parts[1] -- 2026-07-01
-                    local timePart = string.sub(parts[2], 1, 5) -- 22:13
-                    
-                    -- Formata a data
+                    local datePart = parts[1]
+                    local timePart = string.sub(parts[2], 1, 5)
                     local dateFormatted = string.gsub(datePart, "(%d+)-(%d+)-(%d+)", "%3/%2/%1")
-                    
                     return timePart .. " " .. dateFormatted
                 end
             end
@@ -100,12 +96,18 @@ function ClockSystem:GetCurrentDateTime()
     return result
 end
 
--- Atualizar relógio
-function ClockSystem:UpdateClock()
-    local newTime = self:GetCurrentDateTime()
-    if newTime ~= self.currentTime then
-        self.currentTime = newTime
-        return true
+-- Função para atualizar o relógio
+function ClockSystem:Update()
+    if not self.isRunning then return end
+    
+    local currentTime = tick()
+    if currentTime - self.lastUpdate >= self.updateInterval then
+        local newTime = self:GetCurrentDateTime()
+        if newTime ~= self.currentTime then
+            self.currentTime = newTime
+            return true -- Houve mudança
+        end
+        self.lastUpdate = currentTime
     end
     return false
 end
@@ -120,7 +122,7 @@ MainGui.Name = "CarFlipperGUI"
 MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MainGui.ResetOnSpawn = false
 
--- 4.2 MainFrame (Janela Principal - Horizontal)
+-- 4.2 MainFrame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 920, 0, 560)
@@ -139,7 +141,7 @@ MainStroke.Color = Theme.Border
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
--- 4.3 Sombra
+-- Sombra
 local Shadow = Instance.new("Frame")
 Shadow.Name = "Shadow"
 Shadow.Size = UDim2.new(1, 20, 1, 20)
@@ -229,6 +231,7 @@ CloseBtn.MouseLeave:Connect(function()
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
+    ClockSystem.isRunning = false
     TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
         Size = UDim2.new(0, 920, 0, 0),
         Position = UDim2.new(0.5, -460, 0.5, 0)
@@ -248,7 +251,7 @@ TabContainer.Position = UDim2.new(0, 10, 0, 54)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
--- Aba Auto (centralizada)
+-- Aba Auto
 local AutoTab = Instance.new("TextButton")
 AutoTab.Name = "AutoTab"
 AutoTab.Size = UDim2.new(0.15, 0, 1, -4)
@@ -301,12 +304,12 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. SISTEMA DE CHECKBOX
+-- 9. SISTEMA DE CHECKBOX (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
 
-function CreateCheckbox(parent, name, label, xPos, yPos)
+function CreateCheckbox(parent, name, labelText, xPos, yPos)
     local container = Instance.new("Frame")
     container.Name = name
     container.Size = UDim2.new(0, 165, 0, 30)
@@ -346,13 +349,13 @@ function CreateCheckbox(parent, name, label, xPos, yPos)
     checkIcon.Visible = false
     checkIcon.Parent = checkBG
     
-    -- Label
+    -- Label (CORRIGIDO)
     local label = Instance.new("TextLabel")
     label.Name = "Label"
     label.Size = UDim2.new(1, -26, 1, 0)
     label.Position = UDim2.new(0, 26, 0, 0)
     label.BackgroundTransparency = 1
-    label.Text = label
+    label.Text = labelText  -- <--- CORRIGIDO: usa labelText
     label.TextColor3 = Theme.TextPrimary
     label.TextSize = 13
     label.Font = Enum.Font.Gotham
@@ -412,7 +415,6 @@ end
 -- 10. CONSTRUÇÃO DAS SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
--- Dados das seções
 local SectionsData = {
     {
         title = "Base",
@@ -449,13 +451,11 @@ local sectionWidth = 280
 local spacing = 20
 local startX = 10
 
--- Calcular largura total do canvas
 local totalWidth = (#SectionsData * (sectionWidth + spacing)) - spacing + 20
 
 for i, sectionData in ipairs(SectionsData) do
     local xPos = startX + ((i - 1) * (sectionWidth + spacing))
     
-    -- Container da seção
     local sectionContainer = Instance.new("Frame")
     sectionContainer.Name = sectionData.title .. "Section"
     sectionContainer.Size = UDim2.new(0, sectionWidth, 0, 0)
@@ -474,7 +474,6 @@ for i, sectionData in ipairs(SectionsData) do
     sectionStroke.Thickness = 1
     sectionStroke.Parent = sectionContainer
     
-    -- Título da seção
     local sectionTitle = Instance.new("TextLabel")
     sectionTitle.Name = "Title"
     sectionTitle.Size = UDim2.new(1, -16, 0, 32)
@@ -488,7 +487,6 @@ for i, sectionData in ipairs(SectionsData) do
     sectionTitle.TextYAlignment = Enum.TextYAlignment.Center
     sectionTitle.Parent = sectionContainer
     
-    -- Divider
     local divider = Instance.new("Frame")
     divider.Name = "Divider"
     divider.Size = UDim2.new(0.9, 0, 0, 1)
@@ -497,20 +495,18 @@ for i, sectionData in ipairs(SectionsData) do
     divider.BorderSizePixel = 0
     divider.Parent = sectionContainer
     
-    -- Criar checkboxes
+    -- Criar checkboxes (CORRIGIDO)
     local startY = 48
-    for j, label in ipairs(sectionData.items) do
+    for j, labelText in ipairs(sectionData.items) do
         local yPos = startY + ((j - 1) * 32)
-        local name = label:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
-        CreateCheckbox(sectionContainer, name, label, 0, yPos)
+        local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
+        CreateCheckbox(sectionContainer, name, labelText, 0, yPos)
     end
     
-    -- Ajustar altura
     local totalHeight = startY + (#sectionData.items * 32) + 16
     sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight)
 end
 
--- Ajustar Canvas
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
@@ -554,33 +550,35 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. ATUALIZAÇÃO EM TEMPO REAL - RELÓGIO
+-- 12. ATUALIZAÇÃO EM TEMPO REAL - RELÓGIO (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
-local lastClockUpdate = 0
-local clockUpdateInterval = 1.0 -- Atualiza o relógio a cada 1 segundo
-
--- Função principal de atualização
-local function UpdateGUI()
-    local currentTime = tick()
+-- Função para atualizar o relógio continuamente
+local function UpdateClock()
+    if not ClockSystem.isRunning then return end
     
-    -- Atualiza relógio
-    if currentTime - lastClockUpdate >= clockUpdateInterval then
-        local newDateTime = ClockSystem:GetCurrentDateTime()
-        if newDateTime ~= ClockSystem.currentTime then
-            ClockSystem.currentTime = newDateTime
-            DateTimeText.Text = newDateTime
-        end
-        lastClockUpdate = currentTime
+    local newTime = ClockSystem:GetCurrentDateTime()
+    if newTime ~= DateTimeText.Text then
+        DateTimeText.Text = newTime
     end
 end
 
--- Loop de atualização
-RunService.Heartbeat:Connect(UpdateGUI)
+-- Loop de atualização do relógio
+RunService.Heartbeat:Connect(function()
+    UpdateClock()
+end)
 
 -- Atualização inicial
-task.wait(0.5)
+task.wait(0.1)
 DateTimeText.Text = ClockSystem:GetCurrentDateTime()
+
+-- Atualização adicional a cada 1 segundo (garantia)
+spawn(function()
+    while ClockSystem.isRunning and MainGui.Enabled do
+        task.wait(1)
+        UpdateClock()
+    end
+end)
 
 -- ═══════════════════════════════════════════════════════════════
 -- 13. ANIMAÇÃO DE ENTRADA
@@ -615,7 +613,8 @@ local CarFlipperAPI = {
         return DateTimeText.Text
     end,
     RefreshClock = function()
-        DateTimeText.Text = ClockSystem:GetCurrentDateTime()
+        ClockSystem.currentTime = ClockSystem:GetCurrentDateTime()
+        DateTimeText.Text = ClockSystem.currentTime
         return DateTimeText.Text
     end,
     
@@ -640,6 +639,7 @@ local CarFlipperAPI = {
     
     Show = function()
         MainGui.Enabled = true
+        ClockSystem.isRunning = true
         MainFrame.Size = UDim2.new(0, 920, 0, 0)
         MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
         task.wait(0.1)
@@ -647,8 +647,10 @@ local CarFlipperAPI = {
             Size = UDim2.new(0, 920, 0, 560),
             Position = UDim2.new(0.5, -460, 0.5, -280)
         }):Play()
+        CarFlipperAPI.RefreshClock()
     end,
     Hide = function()
+        ClockSystem.isRunning = false
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
             Size = UDim2.new(0, 920, 0, 0),
             Position = UDim2.new(0.5, -460, 0.5, 0)
@@ -668,19 +670,14 @@ local CarFlipperAPI = {
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. TESTE - MOSTRAR CHECKBOXES VISÍVEIS
+-- 15. FINALIZAÇÃO
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado com sucesso!")
 print("📐 Layout Horizontal - Checkboxes visíveis")
-print("🕐 Sistema de relógio em tempo real ativo")
+print("🕐 Sistema de relógio em tempo real ativo (atualização a cada 1 segundo)")
 print("📌 Use _G.CarFlipper para controlar a interface")
-
--- Forçar atualização visual
-task.wait(0.5)
-for name, cb in pairs(Checkboxes) do
-    print("Checkbox carregado:", name)
-end
 
 -- Status inicial
 CarFlipperAPI.SetStatus("[Car Flipper] Aguardando ações...")
+CarFlipperAPI.RefreshClock()
