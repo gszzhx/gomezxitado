@@ -1,7 +1,7 @@
 --[[
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
-    Teleporte automático para área de coleta + Coleta automática
+    Busca automática pelo prompt/botão "Dinheiro Coletar" + Coleta automática
     VERSÃO CORRIGIDA
     ═══════════════════════════════════════════════════════════════
 --]]
@@ -21,8 +21,9 @@ local HttpService = game:GetService("HttpService")
 -- 2. CONFIGURAÇÕES DO CLAIM CASH
 -- ═══════════════════════════════════════════════════════════════
 
--- POSIÇÃO DE COLETA - AJUSTE CONFORME NECESSÁRIO
-local CASH_COLLECT_POSITION = Vector3.new(0, 5, 0) -- <-- MUDE AQUI para a posição correta
+-- Palavras-chave usadas para reconhecer o prompt/botão de coleta de dinheiro
+-- (baseado no "E Dinheiro Coletar" que aparece perto do cofre no jogo)
+local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money", "coletar", "collect"}
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. TEMA
@@ -74,9 +75,20 @@ local ClaimCash = {
     interval = 5, -- segundos
     task = nil,
     isRunning = false,
-    cashPosition = CASH_COLLECT_POSITION,
-    collectRadius = 10, -- Raio para detectar dinheiro
+    collectRadius = 10, -- Raio para detectar dinheiro (fallback por objetos)
 }
+
+-- Verifica se um texto bate com alguma palavra-chave de dinheiro
+local function MatchesMoneyKeyword(text)
+    if not text then return false end
+    text = text:lower()
+    for _, keyword in ipairs(MONEY_PROMPT_KEYWORDS) do
+        if text:find(keyword) then
+            return true
+        end
+    end
+    return false
+end
 
 -- ═══════════════════════════════════════════════════════════════
 -- 6. FUNÇÕES DE COLETA DE DINHEIRO
@@ -216,50 +228,128 @@ local function FindAndCollectCash()
     return collected
 end
 
--- Teleportar para posição de coleta
-local function TeleportToCash()
-    if not ClaimCash.enabled then return false end
+-- Procura no workspace o ProximityPrompt de coleta de dinheiro
+-- (o "E  Dinheiro / Coletar" que aparece perto do cofre)
+local function FindMoneyPrompt()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            if MatchesMoneyKeyword(obj.ObjectText) or MatchesMoneyKeyword(obj.ActionText) then
+                return obj
+            end
+        end
+    end
+    return nil
+end
 
+-- Procura na PlayerGui um botão "COLETAR" (o botão verde da interface)
+local function FindMoneyButton()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return nil end
+
+    for _, gui in ipairs(playerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            for _, btn in ipairs(gui:GetDescendants()) do
+                if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                    if MatchesMoneyKeyword(btn.Text) then
+                        return btn
+                    end
+                    -- Às vezes o texto fica num TextLabel filho, não no próprio botão
+                    for _, child in ipairs(btn:GetDescendants()) do
+                        if child:IsA("TextLabel") and MatchesMoneyKeyword(child.Text) then
+                            return btn
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- Vai até a peça/modelo dono do ProximityPrompt
+local function GoToPrompt(prompt)
     local character = LocalPlayer.Character
     if not character then return false end
 
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return false end
 
-    UpdateStatus("[Car Flipper] Teleportando para Cash...")
+    local part = prompt.Parent
+    if part and part:IsA("Model") and part.PrimaryPart then
+        part = part.PrimaryPart
+    end
 
-    humanoidRootPart.CFrame = CFrame.new(ClaimCash.cashPosition)
-    task.wait(0.5)
+    if not part or not part:IsA("BasePart") then
+        return false
+    end
+
+    UpdateStatus("[Car Flipper] Indo até o dinheiro...")
+    humanoidRootPart.CFrame = part.CFrame * CFrame.new(0, 2, 3)
+    task.wait(0.3)
 
     return true
 end
 
--- Coletar dinheiro
+-- Ativa o ProximityPrompt (com ou sem função de exploit disponível)
+local function TriggerPrompt(prompt)
+    return pcall(function()
+        if typeof(fireproximityprompt) == "function" then
+            -- Função disponível em vários executores: ativa o prompt na hora
+            fireproximityprompt(prompt)
+        else
+            -- Fallback: segura e solta o prompt manualmente
+            prompt:InputHold()
+            task.wait(0.15)
+            prompt:InputRelease()
+        end
+    end)
+end
+
+-- Coletar dinheiro (tenta prompt -> botão de GUI -> objetos soltos no mapa)
 local function CollectCash()
     if not ClaimCash.enabled then return false end
 
-    UpdateStatus("[Car Flipper] Coletando dinheiro...")
+    UpdateStatus("[Car Flipper] Procurando o dinheiro...")
 
+    -- 1) Tenta achar o ProximityPrompt "Dinheiro / Coletar"
+    local prompt = FindMoneyPrompt()
+    if prompt then
+        GoToPrompt(prompt)
+        UpdateStatus("[Car Flipper] Coletando dinheiro...")
+        local ok = TriggerPrompt(prompt)
+        if ok then
+            UpdateStatus("[Car Flipper] Dinheiro coletado!")
+            return true
+        end
+    end
+
+    -- 2) Tenta achar e clicar o botão verde "COLETAR" da interface
+    local button = FindMoneyButton()
+    if button then
+        UpdateStatus("[Car Flipper] Coletando dinheiro (botão)...")
+        local ok = pcall(function()
+            button:Click()
+        end)
+        if ok then
+            UpdateStatus("[Car Flipper] Dinheiro coletado!")
+            return true
+        end
+    end
+
+    -- 3) Fallback antigo: procura objetos soltos no mapa perto do personagem
     local collected = FindAndCollectCash()
-
     if collected then
         UpdateStatus("[Car Flipper] Dinheiro coletado!")
         return true
-    else
-        UpdateStatus("[Car Flipper] Nenhum dinheiro encontrado...")
-        return false
     end
+
+    UpdateStatus("[Car Flipper] Nenhum dinheiro encontrado...")
+    return false
 end
 
 -- Loop principal do Claim Cash
 local function ClaimCashLoop()
     while ClaimCash.enabled and ClaimCash.isRunning do
-        local teleportSuccess = TeleportToCash()
-        if not teleportSuccess then
-            UpdateStatus("[Car Flipper] Erro ao teleportar, tentando novamente...")
-            task.wait(1)
-        end
-
         local collectSuccess = false
         for attempt = 1, 3 do
             collectSuccess = CollectCash()
@@ -1030,8 +1120,8 @@ _G.CarFlipper = {
     StopClaimCash = StopClaimCash,
     ToggleClaimCash = ToggleClaimCash,
     IsClaimCashRunning = function() return ClaimCash.isRunning end,
-    SetCashPosition = function(pos) ClaimCash.cashPosition = pos end,
     SetInterval = function(interval) ClaimCash.interval = interval end,
+    AddMoneyKeyword = function(word) table.insert(MONEY_PROMPT_KEYWORDS, word:lower()) end,
     GetStatus = function() return StatusLabel and StatusLabel.Text or "" end,
     SetStatus = function(text) UpdateStatus(text) end,
 }
