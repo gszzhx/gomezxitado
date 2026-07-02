@@ -2,7 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO - VERSÃO CORRIGIDA
     Interface Premium com Layout Horizontal
-    SEM ERROS E SEM LOOP INFINITO
+    TEcla "J" para abrir/fechar
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -229,7 +229,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. CHECKBOXES (CORRIGIDO - SEM ERROS)
+-- 10. CHECKBOXES
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -403,7 +403,7 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. SISTEMA DE TOGGLE (CORRIGIDO - SEM LOOP)
+-- 12. SISTEMA DE TOGGLE
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true
@@ -458,13 +458,16 @@ local isDraggingActive = false
 ToggleButton.MouseButton1Down:Connect(function(input)
     isDragging = true
     isDraggingActive = false
-    dragStart = input.Position
+    dragStart = Vector2.new(input.Position.X, input.Position.Y)
     buttonStartPos = ToggleButton.Position
 end)
 
-UserInputService.InputChanged:Connect(function(input)
+-- CORRIGIDO: Evento de movimento do mouse
+local function onInputChanged(input)
     if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = (input.Position - dragStart).Magnitude
+        local currentPos = Vector2.new(input.Position.X, input.Position.Y)
+        local delta = (currentPos - dragStart).Magnitude
+        
         if delta > dragThreshold then
             isDraggingActive = true
             local newX = buttonStartPos.X.Offset + (input.Position.X - dragStart.X)
@@ -480,9 +483,11 @@ UserInputService.InputChanged:Connect(function(input)
             ToggleButton.Position = UDim2.new(0, newX, 0, newY)
         end
     end
-end)
+end
 
-ToggleButton.MouseButton1Up:Connect(function()
+UserInputService.InputChanged:Connect(onInputChanged)
+
+ToggleButton.MouseButton1Up:Connect(function(input)
     if not isDraggingActive and isDragging then
         ToggleGUI()
     end
@@ -501,7 +506,7 @@ local StartPanelPos = UDim2.new()
 TitleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         DraggingPanel = true
-        DragPanelStart = input.Position
+        DragPanelStart = Vector2.new(input.Position.X, input.Position.Y)
         StartPanelPos = MainFrame.Position
     end
 end)
@@ -514,7 +519,7 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
     if DraggingPanel and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - DragPanelStart
+        local delta = Vector2.new(input.Position.X - DragPanelStart.X, input.Position.Y - DragPanelStart.Y)
         MainFrame.Position = UDim2.new(
             StartPanelPos.X.Scale,
             StartPanelPos.X.Offset + delta.X,
@@ -525,7 +530,20 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. ATUALIZAÇÃO DO RELÓGIO (CORRIGIDO)
+-- 15. TECLA "J" PARA ABRIR/FECHAR (CORRIGIDO)
+-- ═══════════════════════════════════════════════════════════════
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Tecla "J" para abrir/fechar
+    if input.KeyCode == Enum.KeyCode.J then
+        ToggleGUI()
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 16. ATUALIZAÇÃO DO RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 RunService.Heartbeat:Connect(function()
@@ -537,7 +555,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. API
+-- 17. API
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
@@ -574,7 +592,7 @@ local CarFlipperAPI = {
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 17. ANIMAÇÃO DE ENTRADA
+-- 18. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 task.wait(0.1)
@@ -589,11 +607,17 @@ TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 18. FINAL
+-- 19. FINAL
 -- ═══════════════════════════════════════════════════════════════
 
-print("✅ Car Flipper - GomezXitado carregado com sucesso!")
-print("📌 Clique no botão preto para abrir/fechar")
-print("🖱️ Arraste o botão para qualquer lugar da tela")
-print("⌨️ Tecla 'C' para abrir/fechar")
-print("📌 Use _G.CarFlipper para controlar")
+print("╔═══════════════════════════════════════════════════════════╗")
+print("║     🚗 CAR FLIPPER - GOMEZXITADO CARREGADO!              ║")
+print("║                                                           ║")
+print("║  ✅ Interface aberta automaticamente                      ║")
+print("║  📌 Clique no botão preto para abrir/fechar              ║")
+print("║  🖱️ Arraste o botão para qualquer lugar da tela          ║")
+print("║  ⌨️  Tecla 'J' para abrir/fechar                         ║")
+print("║  🔄 Funciona INFINITAS vezes                             ║")
+print("║                                                           ║")
+print("║  📌 Use _G.CarFlipper para controlar                     ║")
+print("╚═══════════════════════════════════════════════════════════╝")
