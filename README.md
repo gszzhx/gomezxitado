@@ -1,8 +1,8 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO
+    CAR FLIPPER - GOMEZXITADO - VERSÃO CORRIGIDA
     Interface Premium com Layout Horizontal
-    BOTÃO ARRASTÁVEL E CLICÁVEL - CORRIGIDO
+    SEM ERROS E SEM LOOP INFINITO
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -18,41 +18,31 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 -- ═══════════════════════════════════════════════════════════════
--- 2. TEMA ESCURO (DARK THEME)
+-- 2. TEMA
 -- ═══════════════════════════════════════════════════════════════
 
 local Theme = {
     Background = Color3.fromRGB(18, 18, 24),
     Surface = Color3.fromRGB(28, 28, 36),
     SurfaceLight = Color3.fromRGB(38, 38, 48),
-    SurfaceLighter = Color3.fromRGB(48, 48, 58),
-    
     TextPrimary = Color3.fromRGB(235, 235, 245),
     TextSecondary = Color3.fromRGB(175, 175, 190),
     TextMuted = Color3.fromRGB(120, 120, 140),
-    
     Accent = Color3.fromRGB(255, 200, 50),
-    AccentHover = Color3.fromRGB(255, 215, 75),
-    
     Border = Color3.fromRGB(55, 55, 70),
     Divider = Color3.fromRGB(42, 42, 55),
     Shadow = Color3.fromRGB(0, 0, 0),
-    
     CheckboxBG = Color3.fromRGB(45, 45, 58),
     CheckboxChecked = Color3.fromRGB(255, 200, 50),
-    
     Danger = Color3.fromRGB(220, 60, 60),
-    Gold = Color3.fromRGB(255, 200, 50),
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 3. SISTEMA DE RELÓGIO EM TEMPO REAL
+-- 3. RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 local ClockSystem = {
     currentTime = "",
-    lastUpdate = 0,
-    updateInterval = 1,
     isRunning = true,
 }
 
@@ -67,7 +57,6 @@ function ClockSystem:GetCurrentDateTime()
                 for part in string.gmatch(datetime, "[^T]+") do
                     table.insert(parts, part)
                 end
-                
                 if #parts >= 2 then
                     local datePart = parts[1]
                     local timePart = string.sub(parts[2], 1, 5)
@@ -81,42 +70,21 @@ function ClockSystem:GetCurrentDateTime()
     if not success or not result then
         local currentTime = os.time()
         local dateTable = os.date("*t", currentTime)
-        local hour = string.format("%02d", dateTable.hour)
-        local min = string.format("%02d", dateTable.min)
-        local day = string.format("%02d", dateTable.day)
-        local month = string.format("%02d", dateTable.month)
-        local year = dateTable.year
-        
-        return hour .. ":" .. min .. " " .. day .. "/" .. month .. "/" .. year
+        return string.format("%02d:%02d %02d/%02d/%04d", 
+            dateTable.hour, dateTable.min, 
+            dateTable.day, dateTable.month, dateTable.year)
     end
-    
     return result
 end
 
-function ClockSystem:Update()
-    if not self.isRunning then return end
-    
-    local currentTime = tick()
-    if currentTime - self.lastUpdate >= self.updateInterval then
-        local newTime = self:GetCurrentDateTime()
-        if newTime ~= self.currentTime then
-            self.currentTime = newTime
-            return true
-        end
-        self.lastUpdate = currentTime
-    end
-    return false
-end
-
 -- ═══════════════════════════════════════════════════════════════
--- 4. BOTÃO FLUTUANTE - ARRASTÁVEL E CLICÁVEL (CORRIGIDO)
+-- 4. BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "ToggleGUI"
 ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ToggleGui.ResetOnSpawn = false
-ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local ToggleButton = Instance.new("ImageButton")
 ToggleButton.Name = "ToggleButton"
@@ -134,140 +102,8 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
-local ToggleShadow = Instance.new("Frame")
-ToggleShadow.Name = "Shadow"
-ToggleShadow.Size = UDim2.new(1, 8, 1, 8)
-ToggleShadow.Position = UDim2.new(0, -4, 0, -4)
-ToggleShadow.BackgroundColor3 = Theme.Shadow
-ToggleShadow.BackgroundTransparency = 0.4
-ToggleShadow.BorderSizePixel = 0
-ToggleShadow.Parent = ToggleButton
-
-local ToggleShadowCorner = Instance.new("UICorner")
-ToggleShadowCorner.CornerRadius = UDim.new(0, 10)
-ToggleShadowCorner.Parent = ToggleShadow
-
--- Tooltip
-local Tooltip = Instance.new("TextLabel")
-Tooltip.Name = "Tooltip"
-Tooltip.Size = UDim2.new(0, 120, 0, 28)
-Tooltip.Position = UDim2.new(0, -130, 0.5, -14)
-Tooltip.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-Tooltip.BackgroundTransparency = 0.9
-Tooltip.Text = "Car Flipper"
-Tooltip.TextColor3 = Color3.fromRGB(220, 220, 230)
-Tooltip.TextSize = 12
-Tooltip.Font = Enum.Font.GothamMedium
-Tooltip.TextXAlignment = Enum.TextXAlignment.Center
-Tooltip.TextYAlignment = Enum.TextYAlignment.Center
-Tooltip.BorderSizePixel = 0
-Tooltip.Visible = false
-Tooltip.Parent = ToggleButton
-
-local TooltipCorner = Instance.new("UICorner")
-TooltipCorner.CornerRadius = UDim.new(0, 6)
-TooltipCorner.Parent = Tooltip
-
 -- ═══════════════════════════════════════════════════════════════
--- 4.1 SISTEMA DE ARRASTAR DO BOTÃO (CORRIGIDO)
--- ═══════════════════════════════════════════════════════════════
-
-local isDraggingButton = false
-local isDraggingStarted = false
-local dragButtonStart = Vector2.new()
-local buttonStartPos = UDim2.new()
-local mouseDownPos = Vector2.new()
-local mouseUpPos = Vector2.new()
-local dragThreshold = 5 -- Distância mínima para considerar arrasto
-
--- Detectar quando o mouse pressiona o botão
-ToggleButton.MouseButton1Down:Connect(function(input)
-    mouseDownPos = input.Position
-    isDraggingButton = true
-    isDraggingStarted = false
-    dragButtonStart = input.Position
-    buttonStartPos = ToggleButton.Position
-    
-    -- Efeito de clique
-    TweenService:Create(ToggleButton, TweenInfo.new(0.08), {
-        Size = UDim2.new(0, 32, 0, 32)
-    }):Play()
-end)
-
--- Detectar movimento do mouse
-UserInputService.InputChanged:Connect(function(input)
-    if isDraggingButton and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = (input.Position - dragButtonStart).Magnitude
-        
-        -- Se moveu mais que o threshold, considera como arrasto
-        if delta > dragThreshold then
-            isDraggingStarted = true
-            
-            local newX = buttonStartPos.X.Offset + (input.Position.X - dragButtonStart.X)
-            local newY = buttonStartPos.Y.Offset + (input.Position.Y - dragButtonStart.Y)
-            
-            -- Limita dentro da tela
-            local screenX = ToggleGui.AbsoluteSize.X
-            local screenY = ToggleGui.AbsoluteSize.Y
-            local buttonSize = 36
-            
-            newX = math.max(0, math.min(newX, screenX - buttonSize - 10))
-            newY = math.max(0, math.min(newY, screenY - buttonSize - 50))
-            
-            ToggleButton.Position = UDim2.new(0, newX, 0, newY)
-        end
-    end
-end)
-
--- Detectar quando solta o mouse
-ToggleButton.MouseButton1Up:Connect(function(input)
-    mouseUpPos = input.Position
-    
-    -- Efeito de soltar
-    TweenService:Create(ToggleButton, TweenInfo.new(0.08), {
-        Size = UDim2.new(0, 36, 0, 36)
-    }):Play()
-    
-    -- Se não arrastou, é um clique
-    if not isDraggingStarted then
-        -- É um clique! Executa o toggle
-        ToggleGUI()
-    end
-    
-    isDraggingButton = false
-    isDraggingStarted = false
-end)
-
--- Efeitos hover
-ToggleButton.MouseEnter:Connect(function()
-    if not isDraggingButton then
-        TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
-            Size = UDim2.new(0, 38, 0, 38),
-            BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-        }):Play()
-        Tooltip.Visible = true
-        TweenService:Create(Tooltip, TweenInfo.new(0.2), {
-            BackgroundTransparency = 0.85
-        }):Play()
-    end
-end)
-
-ToggleButton.MouseLeave:Connect(function()
-    if not isDraggingButton then
-        TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
-            Size = UDim2.new(0, 36, 0, 36),
-            BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-        }):Play()
-        TweenService:Create(Tooltip, TweenInfo.new(0.2), {
-            BackgroundTransparency = 0.9
-        }):Play()
-        task.wait(0.2)
-        Tooltip.Visible = false
-    end
-end)
-
--- ═══════════════════════════════════════════════════════════════
--- 5. CRIAÇÃO DA INTERFACE PRINCIPAL
+-- 5. INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local MainGui = Instance.new("ScreenGui")
@@ -288,24 +124,6 @@ MainFrame.Visible = true
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Theme.Border
-MainStroke.Thickness = 1.5
-MainStroke.Parent = MainFrame
-
-local Shadow = Instance.new("Frame")
-Shadow.Name = "Shadow"
-Shadow.Size = UDim2.new(1, 20, 1, 20)
-Shadow.Position = UDim2.new(0, -10, 0, -10)
-Shadow.BackgroundColor3 = Theme.Shadow
-Shadow.BackgroundTransparency = 0.5
-Shadow.BorderSizePixel = 0
-Shadow.Parent = MainFrame
-
-local ShadowCorner = Instance.new("UICorner")
-ShadowCorner.CornerRadius = UDim.new(0, 18)
-ShadowCorner.Parent = Shadow
 
 -- ═══════════════════════════════════════════════════════════════
 -- 6. BARRA DE TÍTULO
@@ -340,7 +158,7 @@ DateTimeText.Name = "DateTimeText"
 DateTimeText.Size = UDim2.new(0.35, -10, 1, 0)
 DateTimeText.Position = UDim2.new(0.65, 0, 0, 0)
 DateTimeText.BackgroundTransparency = 1
-DateTimeText.Text = "00:00 00/00/0000"
+DateTimeText.Text = ClockSystem:GetCurrentDateTime()
 DateTimeText.TextColor3 = Theme.TextMuted
 DateTimeText.TextSize = 14
 DateTimeText.Font = Enum.Font.Gotham
@@ -384,7 +202,7 @@ StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
 StatusLabel.Position = UDim2.new(0, 12, 0, 104)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "[Car Flipper] Idle"
+StatusLabel.Text = "[Car Flipper] Aguardando ações..."
 StatusLabel.TextColor3 = Theme.TextSecondary
 StatusLabel.TextSize = 13
 StatusLabel.Font = Enum.Font.GothamMedium
@@ -393,7 +211,7 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. CONTAINER DE CONTEÚDO
+-- 9. CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
@@ -411,7 +229,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. SISTEMA DE CHECKBOX
+-- 10. CHECKBOXES (CORRIGIDO - SEM ERROS)
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -435,11 +253,6 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
     local checkCorner = Instance.new("UICorner")
     checkCorner.CornerRadius = UDim.new(0, 5)
     checkCorner.Parent = checkBG
-    
-    local checkStroke = Instance.new("UIStroke")
-    checkStroke.Color = Theme.Border
-    checkStroke.Thickness = 1
-    checkStroke.Parent = checkBG
     
     local checkIcon = Instance.new("TextLabel")
     checkIcon.Name = "CheckIcon"
@@ -469,24 +282,23 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
     
     local state = {
         checked = false,
-        container = container,
         checkBG = checkBG,
         checkIcon = checkIcon,
         label = label
     }
     
     function state:Toggle()
-        self.checked = not self.checked
-        if self.checked then
-            TweenService:Create(self.checkBG, TweenInfo.new(0.15), {
+        state.checked = not state.checked
+        if state.checked then
+            TweenService:Create(state.checkBG, TweenInfo.new(0.15), {
                 BackgroundColor3 = Theme.CheckboxChecked
             }):Play()
-            self.checkIcon.Visible = true
+            state.checkIcon.Visible = true
         else
-            TweenService:Create(self.checkBG, TweenInfo.new(0.15), {
+            TweenService:Create(state.checkBG, TweenInfo.new(0.15), {
                 BackgroundColor3 = Theme.CheckboxBG
             }):Play()
-            self.checkIcon.Visible = false
+            state.checkIcon.Visible = false
         end
     end
     
@@ -496,26 +308,12 @@ function CreateCheckbox(parent, name, labelText, xPos, yPos)
         end
     end)
     
-    container.MouseEnter:Connect(function()
-        TweenService:Create(label, TweenInfo.new(0.15), {
-            TextColor3 = Theme.Accent
-        }):Play()
-    end)
-    
-    container.MouseLeave:Connect(function()
-        if not state.checked then
-            TweenService:Create(label, TweenInfo.new(0.15), {
-                TextColor3 = Theme.TextPrimary
-            }):Play()
-        end
-    end)
-    
     Checkboxes[name] = state
     return state
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. CONSTRUÇÃO DAS SEÇÕES
+-- 11. SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local SectionsData = {
@@ -552,7 +350,6 @@ local SectionsData = {
 local sectionWidth = 280
 local spacing = 20
 local startX = 10
-
 local totalWidth = (#SectionsData * (sectionWidth + spacing)) - spacing + 20
 
 for i, sectionData in ipairs(SectionsData) do
@@ -570,11 +367,6 @@ for i, sectionData in ipairs(SectionsData) do
     local sectionCorner = Instance.new("UICorner")
     sectionCorner.CornerRadius = UDim.new(0, 10)
     sectionCorner.Parent = sectionContainer
-    
-    local sectionStroke = Instance.new("UIStroke")
-    sectionStroke.Color = Theme.Border
-    sectionStroke.Thickness = 1
-    sectionStroke.Parent = sectionContainer
     
     local sectionTitle = Instance.new("TextLabel")
     sectionTitle.Name = "Title"
@@ -611,61 +403,15 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. SISTEMA DE ARRASTAR DO PAINEL
--- ═══════════════════════════════════════════════════════════════
-
-local Dragging = false
-local DragStart = Vector2.new()
-local StartPos = UDim2.new()
-
-TitleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        Dragging = true
-        DragStart = input.Position
-        StartPos = MainFrame.Position
-        TweenService:Create(TitleBar, TweenInfo.new(0.15), {
-            BackgroundTransparency = 0.1
-        }):Play()
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and Dragging then
-        Dragging = false
-        TweenService:Create(TitleBar, TweenInfo.new(0.15), {
-            BackgroundTransparency = 0
-        }):Play()
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - DragStart
-        MainFrame.Position = UDim2.new(
-            StartPos.X.Scale,
-            StartPos.X.Offset + delta.X,
-            StartPos.Y.Scale,
-            StartPos.Y.Offset + delta.Y
-        )
-    end
-end)
-
--- ═══════════════════════════════════════════════════════════════
--- 13. SISTEMA DE TOGGLE - INFINITO
+-- 12. SISTEMA DE TOGGLE (CORRIGIDO - SEM LOOP)
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true
 local isAnimating = false
-local clickCount = 0
 
 function ToggleGUI()
-    if isAnimating then
-        clickCount = clickCount + 1
-        return
-    end
-    
+    if isAnimating then return end
     isAnimating = true
-    clickCount = clickCount + 1
     
     isOpen = not isOpen
     
@@ -678,116 +424,139 @@ function ToggleGUI()
             Size = UDim2.new(0, 920, 0, 560),
             Position = UDim2.new(0.5, -460, 0.5, -280)
         })
-        
         tween:Play()
         tween.Completed:Wait()
         
         ClockSystem.isRunning = true
-        CarFlipperAPI.RefreshClock()
-        
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
-            ImageColor3 = Color3.fromRGB(200, 200, 210)
-        }):Play()
-        
-        Tooltip.Text = "Fechar Car Flipper"
-        
+        ToggleButton.ImageColor3 = Color3.fromRGB(200, 200, 210)
     else
         local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
             Size = UDim2.new(0, 920, 0, 0),
             Position = UDim2.new(0.5, -460, 0.5, 0)
         })
-        
         tween:Play()
         tween.Completed:Wait()
         
         MainFrame.Visible = false
         ClockSystem.isRunning = false
-        
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
-            ImageColor3 = Color3.fromRGB(150, 150, 160)
-        }):Play()
-        
-        Tooltip.Text = "Abrir Car Flipper"
+        ToggleButton.ImageColor3 = Color3.fromRGB(150, 150, 160)
     end
     
     isAnimating = false
-    
-    if clickCount > 0 then
-        clickCount = 0
-        ToggleGUI()
-    end
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. ATALHO DE TECLADO
+-- 13. EVENTOS DO BOTÃO (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == Enum.KeyCode.C then
+local isDragging = false
+local dragStart = Vector2.new()
+local buttonStartPos = UDim2.new()
+local dragThreshold = 5
+local isDraggingActive = false
+
+ToggleButton.MouseButton1Down:Connect(function(input)
+    isDragging = true
+    isDraggingActive = false
+    dragStart = input.Position
+    buttonStartPos = ToggleButton.Position
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = (input.Position - dragStart).Magnitude
+        if delta > dragThreshold then
+            isDraggingActive = true
+            local newX = buttonStartPos.X.Offset + (input.Position.X - dragStart.X)
+            local newY = buttonStartPos.Y.Offset + (input.Position.Y - dragStart.Y)
+            
+            local screenX = ToggleGui.AbsoluteSize.X
+            local screenY = ToggleGui.AbsoluteSize.Y
+            local buttonSize = 36
+            
+            newX = math.max(0, math.min(newX, screenX - buttonSize - 10))
+            newY = math.max(0, math.min(newY, screenY - buttonSize - 50))
+            
+            ToggleButton.Position = UDim2.new(0, newX, 0, newY)
+        end
+    end
+end)
+
+ToggleButton.MouseButton1Up:Connect(function()
+    if not isDraggingActive and isDragging then
         ToggleGUI()
+    end
+    isDragging = false
+    isDraggingActive = false
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 14. ARRASTAR DO PAINEL
+-- ═══════════════════════════════════════════════════════════════
+
+local DraggingPanel = false
+local DragPanelStart = Vector2.new()
+local StartPanelPos = UDim2.new()
+
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        DraggingPanel = true
+        DragPanelStart = input.Position
+        StartPanelPos = MainFrame.Position
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and DraggingPanel then
+        DraggingPanel = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if DraggingPanel and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - DragPanelStart
+        MainFrame.Position = UDim2.new(
+            StartPanelPos.X.Scale,
+            StartPanelPos.X.Offset + delta.X,
+            StartPanelPos.Y.Scale,
+            StartPanelPos.Y.Offset + delta.Y
+        )
     end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. ATUALIZAÇÃO DO RELÓGIO
+-- 15. ATUALIZAÇÃO DO RELÓGIO (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
-function UpdateClock()
+RunService.Heartbeat:Connect(function()
     if not ClockSystem.isRunning then return end
-    
     local newTime = ClockSystem:GetCurrentDateTime()
     if newTime ~= DateTimeText.Text then
         DateTimeText.Text = newTime
     end
-end
-
-RunService.Heartbeat:Connect(function()
-    UpdateClock()
-end)
-
-spawn(function()
-    while true do
-        task.wait(1)
-        UpdateClock()
-    end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. API PÚBLICA
+-- 16. API
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
-    GetStatus = function()
-        return StatusLabel.Text
+    GetStatus = function() return StatusLabel.Text end,
+    SetStatus = function(text) StatusLabel.Text = text end,
+    SetIdle = function() StatusLabel.Text = "[Car Flipper] Idle" end,
+    GetTime = function() return DateTimeText.Text end,
+    RefreshClock = function() 
+        DateTimeText.Text = ClockSystem:GetCurrentDateTime() 
+        return DateTimeText.Text 
     end,
-    SetStatus = function(text)
-        StatusLabel.Text = text
+    GetCheckbox = function(name) return Checkboxes[name] end,
+    ToggleCheckbox = function(name) 
+        local cb = Checkboxes[name] 
+        if cb then cb:Toggle() end 
     end,
-    SetIdle = function()
-        StatusLabel.Text = "[Car Flipper] Idle"
-    end,
-    
-    GetTime = function()
-        return DateTimeText.Text
-    end,
-    RefreshClock = function()
-        ClockSystem.currentTime = ClockSystem:GetCurrentDateTime()
-        DateTimeText.Text = ClockSystem.currentTime
-        return DateTimeText.Text
-    end,
-    
-    GetCheckbox = function(name)
-        return Checkboxes[name]
-    end,
-    ToggleCheckbox = function(name)
-        local cb = Checkboxes[name]
-        if cb then cb:Toggle() end
-    end,
-    IsChecked = function(name)
-        local cb = Checkboxes[name]
-        return cb and cb.checked or false
+    IsChecked = function(name) 
+        local cb = Checkboxes[name] 
+        return cb and cb.checked or false 
     end,
     GetAllStates = function()
         local states = {}
@@ -796,41 +565,18 @@ local CarFlipperAPI = {
         end
         return states
     end,
-    
     Toggle = ToggleGUI,
-    Open = function()
-        if not isOpen then ToggleGUI() end
-    end,
-    Close = function()
-        if isOpen then ToggleGUI() end
-    end,
-    IsOpen = function()
-        return isOpen
-    end,
+    Open = function() if not isOpen then ToggleGUI() end end,
+    Close = function() if isOpen then ToggleGUI() end end,
+    IsOpen = function() return isOpen end,
 }
 
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 17. FINALIZAÇÃO
+-- 17. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
-print("╔═══════════════════════════════════════════════════════════╗")
-print("║     🚗 CAR FLIPPER - GOMEZXITADO CARREGADO!              ║")
-print("║                                                           ║")
-print("║  ✅ Interface aberta automaticamente                      ║")
-print("║  📌 Botão preto no canto superior direito                 ║")
-print("║  🖱️  Clique para ABRIR/FECHAR - Arraste para MOVER       ║")
-print("║  🔄 Funciona INFINITAS vezes                             ║")
-print("║  ⌨️  Tecla 'C' para abrir/fechar (opcional)              ║")
-print("║                                                           ║")
-print("║  📌 Use _G.CarFlipper para controlar a interface         ║")
-print("╚═══════════════════════════════════════════════════════════╝")
-
-CarFlipperAPI.SetStatus("[Car Flipper] Aguardando ações...")
-CarFlipperAPI.RefreshClock()
-
--- Animação de entrada
 task.wait(0.1)
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -841,3 +587,13 @@ TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.Ea
     Size = UDim2.new(0, 920, 0, 560),
     Position = UDim2.new(0.5, -460, 0.5, -280)
 }):Play()
+
+-- ═══════════════════════════════════════════════════════════════
+-- 18. FINAL
+-- ═══════════════════════════════════════════════════════════════
+
+print("✅ Car Flipper - GomezXitado carregado com sucesso!")
+print("📌 Clique no botão preto para abrir/fechar")
+print("🖱️ Arraste o botão para qualquer lugar da tela")
+print("⌨️ Tecla 'C' para abrir/fechar")
+print("📌 Use _G.CarFlipper para controlar")
