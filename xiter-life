@@ -1,54 +1,29 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM PARTS COMPLETO
-    Procura ESPECIFICAMENTE o botão "Peças", teleporta e coleta
-    CORREÇÃO: Adicionadas verificações de segurança
+    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM PARTS CORRIGIDO
+    Procura o botão "Peças", teleporta e coleta automaticamente
     ═══════════════════════════════════════════════════════════════
 --]]
 
 -- ═══════════════════════════════════════════════════════════════
--- 0. VERIFICAÇÕES DE SEGURANÇA (CORREÇÃO DO ERRO)
+-- 1. CONFIGURAÇÕES E IMPORTAÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
--- Verifica se o ambiente está disponível
-if not game then
-    warn("⚠️ Game service not available")
-    return
-end
-
--- Tenta obter os serviços com segurança
 local Players = game:GetService("Players")
-if not Players then
-    warn("⚠️ Players service not available")
-    return
-end
-
 local LocalPlayer = Players.LocalPlayer
-if not LocalPlayer then
-    warn("⚠️ LocalPlayer not available")
-    return
-end
-
--- Tenta obter os outros serviços
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
--- Verifica se os serviços essenciais estão disponíveis
-if not TweenService or not UserInputService or not RunService then
-    warn("⚠️ Essential services not available")
-    return
-end
-
 -- ═══════════════════════════════════════════════════════════════
--- 1. CONFIGURAÇÕES DOS SISTEMAS
+-- 2. CONFIGURAÇÕES DOS SISTEMAS
 -- ═══════════════════════════════════════════════════════════════
 
 local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money"}
 
 -- ═══════════════════════════════════════════════════════════════
--- 2. TEMA
+-- 3. TEMA
 -- ═══════════════════════════════════════════════════════════════
 
 local Theme = {
@@ -75,7 +50,7 @@ local Theme = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 3. DECLARAÇÕES ANTECIPADAS
+-- 4. DECLARAÇÕES ANTECIPADAS
 -- ═══════════════════════════════════════════════════════════════
 
 local StatusLabel
@@ -88,7 +63,7 @@ local function UpdateStatus(text)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. SISTEMA DE GERENCIAMENTO DE ATIVIDADES
+-- 5. SISTEMA DE GERENCIAMENTO DE ATIVIDADES
 -- ═══════════════════════════════════════════════════════════════
 
 local ActivityManager = {
@@ -145,7 +120,7 @@ function ActivityManager:GetCurrentActivity()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. SISTEMA DE INTERRUPÇÃO (PRIORIDADE ABSOLUTA)
+-- 6. SISTEMA DE INTERRUPÇÃO (PRIORIDADE ABSOLUTA)
 -- ═══════════════════════════════════════════════════════════════
 
 local InterruptionSystem = {
@@ -167,7 +142,7 @@ function InterruptionSystem:Interrupt(taskName, callback)
     
     UpdateStatus(string.format("[Car Flipper] ⚠️ INTERROMPIDO: %s", taskName or "Coleta"))
     return true
-}
+end
 
 function InterruptionSystem:Resume()
     if not self.isInterrupted then
@@ -196,20 +171,21 @@ function InterruptionSystem:GetInterruptedTask()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. SISTEMA CLAIM PARTS - ESPECIFICAMENTE "PEÇAS"
+-- 7. SISTEMA CLAIM PARTS (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
 local ClaimParts = {
     enabled = false,
-    interval = 102, -- 1 minuto e 42 segundos
+    interval = 102,
     task = nil,
     isRunning = false,
     collectRadius = 50,
     isCollecting = false,
+    partsLocation = nil,
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. SISTEMA CLAIM CASH (estado)
+-- 8. SISTEMA CLAIM CASH (estado)
 -- ═══════════════════════════════════════════════════════════════
 
 local ClaimCash = {
@@ -221,51 +197,63 @@ local ClaimCash = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. FUNÇÕES DE COLETA DE PEÇAS - ESPECIFICAMENTE "PEÇAS"
+-- 9. FUNÇÕES DE COLETA DE PEÇAS (CORRIGIDAS)
 -- ═══════════════════════════════════════════════════════════════
 
--- Procura ESPECIFICAMENTE o botão "Peças" na interface
+-- Procura o botão "Peças" ou "Coletar" na interface
 local function FindPartsButton()
     local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
 
-    -- APENAS "Peças" e suas variações, NÃO "Coletar"
+    -- Lista de textos que indicam botão de peças
     local partsTexts = {
         "Peças", "Pecas", "peças", "pecas", 
         "PARTES", "Partes", "partes",
+        "COLETAR", "Coletar", "coletar",
+        "COLLECT", "Collect", "collect",
         "PEÇAS", "PECAS"
     }
     
     for _, gui in ipairs(playerGui:GetChildren()) do
         if gui:IsA("ScreenGui") then
             for _, descendant in ipairs(gui:GetDescendants()) do
-                -- Verifica se é um botão
-                if descendant:IsA("TextButton") or descendant:IsA("ImageButton") then
+                -- Verifica se é um TextButton
+                if descendant:IsA("TextButton") then
+                    local btnText = descendant.Text or ""
+                    for _, partsText in ipairs(partsTexts) do
+                        if btnText:find(partsText) then
+                            print("🔧 Botão 'Peças' encontrado: " .. btnText)
+                            return descendant
+                        end
+                    end
+                end
+                
+                -- Verifica ImageButton com TextLabel ou Text dentro
+                if descendant:IsA("ImageButton") then
                     -- Tenta pegar o texto de forma segura
                     local btnText = ""
-                    local success, result = pcall(function()
+                    local hasText = pcall(function()
                         btnText = descendant.Text or ""
                     end)
                     
-                    if not success then
-                        -- Se falhar, tenta procurar por TextLabel dentro do botão
-                        for _, child in ipairs(descendant:GetDescendants()) do
-                            if child:IsA("TextLabel") then
-                                local labelText = child.Text or ""
-                                for _, partsText in ipairs(partsTexts) do
-                                    if labelText:find(partsText) then
-                                        print("🔧 Botão 'Peças' encontrado via TextLabel: " .. labelText)
-                                        return descendant
-                                    end
-                                end
-                            end
-                        end
-                    else
-                        -- Verifica o texto do botão
+                    if hasText and btnText ~= "" then
                         for _, partsText in ipairs(partsTexts) do
                             if btnText:find(partsText) then
-                                print("🔧 Botão 'Peças' encontrado: " .. btnText)
+                                print("🔧 Botão 'Peças' (ImageButton) encontrado: " .. btnText)
                                 return descendant
+                            end
+                        end
+                    end
+                    
+                    -- Procura por TextLabel dentro do ImageButton
+                    for _, child in ipairs(descendant:GetDescendants()) do
+                        if child:IsA("TextLabel") then
+                            local labelText = child.Text or ""
+                            for _, partsText in ipairs(partsTexts) do
+                                if labelText:find(partsText) then
+                                    print("🔧 Botão (ImageButton) encontrado via TextLabel: " .. labelText)
+                                    return descendant
+                                end
                             end
                         end
                     end
@@ -280,7 +268,7 @@ local function FindPartsButton()
                             local parent = descendant.Parent
                             while parent do
                                 if parent:IsA("TextButton") or parent:IsA("ImageButton") then
-                                    print("🔧 Botão 'Peças' encontrado via TextLabel pai: " .. labelText)
+                                    print("🔧 Botão encontrado via TextLabel pai: " .. labelText)
                                     return parent
                                 end
                                 parent = parent.Parent
@@ -303,19 +291,21 @@ local function FindPartsLocation()
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return partsLocations end
 
-    -- Palavras-chave específicas para peças
+    -- Palavras-chave para encontrar peças
     local partsKeywords = {
         "peça", "parts", "part", "peca", 
         "component", "engrenagem", "gear", 
-        "item", "caixa", "box", "chest", "baú",
+        "item", "coletar", "collect",
+        "caixa", "box", "chest", "baú",
         "recompensa", "reward", "prêmio"
     }
     
-    -- Procura por objetos de peças
+    -- Primeiro, procura por modelos com nomes específicos
     for _, obj in ipairs(workspace:GetDescendants()) do
         local isPart = false
         local objName = obj.Name:lower()
         
+        -- Verifica se é um objeto de peças
         for _, keyword in ipairs(partsKeywords) do
             if objName:find(keyword) then
                 isPart = true
@@ -323,6 +313,7 @@ local function FindPartsLocation()
             end
         end
         
+        -- Se for um objeto de peças, pega sua posição
         if isPart and (obj:IsA("Part") or obj:IsA("Model") or obj:IsA("BasePart") or obj:IsA("MeshPart")) then
             local position = nil
             if obj:IsA("Model") and obj.PrimaryPart then
@@ -355,7 +346,8 @@ local function FindPartsPrompt()
     local partsTexts = {
         "Peças", "Pecas", "peças", "pecas", 
         "PARTES", "Partes", "partes",
-        "PEÇAS", "PECAS"
+        "COLETAR", "Coletar", "coletar",
+        "COLLECT", "Collect", "collect"
     }
     
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -363,6 +355,7 @@ local function FindPartsPrompt()
             local objText = obj.ObjectText or ""
             local actionText = obj.ActionText or ""
             
+            -- Verifica se o prompt tem algum texto relacionado a peças
             for _, partsText in ipairs(partsTexts) do
                 if objText:find(partsText) or actionText:find(partsText) then
                     print("🔧 Prompt 'Peças' encontrado: " .. objText)
@@ -382,11 +375,12 @@ local function TeleportToParts(position)
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return false end
 
+    -- Verifica se a posição é válida
     if not position then
         return false
     end
 
-    -- Teleporta o jogador para perto do alvo
+    -- Teleporta o jogador para perto do alvo (com offset aleatório)
     local cframe = CFrame.new(
         position.X + math.random(-3, 3),
         position.Y + 2,
@@ -394,7 +388,7 @@ local function TeleportToParts(position)
     )
     
     humanoidRootPart.CFrame = cframe
-    UpdateStatus(string.format("[Car Flipper] 📍 Teleportado para as peças"))
+    UpdateStatus(string.format("[Car Flipper] 📍 Teleportado para as peças em (%.1f, %.1f, %.1f)", position.X, position.Y, position.Z))
     task.wait(0.3)
     
     return true
@@ -405,29 +399,35 @@ local function SafeClickButton(button)
     if not button then return false end
     
     local success = pcall(function()
-        if button:IsA("TextButton") or button:IsA("ImageButton") then
+        -- Tenta diferentes métodos de clique
+        if button:IsA("TextButton") then
             button:Click()
+            return true
+        elseif button:IsA("ImageButton") then
+            -- Para ImageButton, tenta Click() primeiro
+            local clickSuccess = pcall(function()
+                button:Click()
+            end)
+            
+            if not clickSuccess then
+                -- Se Click() falhar, tenta simular clique
+                local input = {
+                    UserInputType = Enum.UserInputType.MouseButton1,
+                    Position = Vector2.new(button.AbsolutePosition.X + button.AbsoluteSize.X/2, 
+                                          button.AbsolutePosition.Y + button.AbsoluteSize.Y/2)
+                }
+                button:InputBegan(input)
+                task.wait(0.1)
+                button:InputEnd(input)
+            end
             return true
         end
     end)
     
-    if not success then
-        pcall(function()
-            local input = {
-                UserInputType = Enum.UserInputType.MouseButton1,
-                Position = Vector2.new(button.AbsolutePosition.X + button.AbsoluteSize.X/2, 
-                                      button.AbsolutePosition.Y + button.AbsoluteSize.Y/2)
-            }
-            button:InputBegan(input)
-            task.wait(0.1)
-            button:InputEnd(input)
-        end)
-    end
-    
-    return true
+    return success
 end
 
--- Função principal de coleta de peças - APENAS "PEÇAS"
+-- Função principal de coleta de peças (CORRIGIDA)
 local function CollectParts()
     if not ClaimParts.enabled then 
         return false 
@@ -449,7 +449,7 @@ local function CollectParts()
     
     local success = false
     
-    -- 1. PRIMEIRO: Procura ESPECIFICAMENTE o botão "Peças" na interface
+    -- 1. PRIMEIRO: Procura o botão "Peças" na interface
     UpdateStatus("[Car Flipper] 🔧 Procurando botão 'Peças'...")
     local partsButton = FindPartsButton()
     if partsButton then
@@ -503,13 +503,16 @@ local function CollectParts()
         if #partsLocations > 0 then
             UpdateStatus(string.format("[Car Flipper] 🔧 Encontradas %d peças", #partsLocations))
             
+            -- Teleporta para a peça mais próxima
             local nearest = partsLocations[1]
             if nearest and nearest.position then
                 TeleportToParts(nearest.position)
                 
+                -- Tenta coletar a peça
                 local objectSuccess = pcall(function()
                     local obj = nearest.object
                     
+                    -- Tenta ClickDetector
                     local clickDetector = obj:FindFirstChild("ClickDetector")
                     if clickDetector then
                         clickDetector:Click()
@@ -517,6 +520,7 @@ local function CollectParts()
                         return
                     end
                     
+                    -- Tenta ProximityPrompt
                     local proximityPrompt = obj:FindFirstChild("ProximityPrompt")
                     if proximityPrompt then
                         proximityPrompt:InputHold()
@@ -526,6 +530,7 @@ local function CollectParts()
                         return
                     end
                     
+                    -- Tenta Tool
                     local tool = obj:FindFirstChild("Tool")
                     if tool then
                         local backpack = LocalPlayer:FindFirstChild("Backpack")
@@ -536,6 +541,7 @@ local function CollectParts()
                         end
                     end
                     
+                    -- Tenta Touch
                     if obj:IsA("BasePart") then
                         local char = LocalPlayer.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
@@ -547,6 +553,7 @@ local function CollectParts()
                         end
                     end
                     
+                    -- Tenta destruir o objeto
                     if obj:IsA("BasePart") or obj:IsA("Model") then
                         obj:Destroy()
                         print("✅ Peça coletada (destruída)")
@@ -562,8 +569,63 @@ local function CollectParts()
         end
     end
 
+    -- 4. QUARTO: Procura por qualquer coisa com "Coletar" ou "Collect"
     if not success then
-        UpdateStatus("[Car Flipper] ❌ Nenhum botão 'Peças' encontrado...")
+        UpdateStatus("[Car Flipper] 🔧 Procurando por 'Coletar'...")
+        
+        -- Procura em todos os ScreenGuis por qualquer botão com "Coletar"
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            for _, gui in ipairs(playerGui:GetChildren()) do
+                if gui:IsA("ScreenGui") then
+                    for _, btn in ipairs(gui:GetDescendants()) do
+                        if btn:IsA("TextButton") then
+                            local btnText = btn.Text or ""
+                            local lowerText = btnText:lower()
+                            if lowerText:find("coletar") or lowerText:find("collect") or 
+                               lowerText:find("pegar") or lowerText:find("reivindicar") or
+                               lowerText:find("claim") then
+                                UpdateStatus("[Car Flipper] 🔧 Botão 'Coletar' encontrado!")
+                                SafeClickButton(btn)
+                                UpdateStatus("[Car Flipper] ✅ Coletado via botão genérico!")
+                                success = true
+                                break
+                            end
+                        elseif btn:IsA("ImageButton") then
+                            -- Para ImageButton, procura TextLabel dentro
+                            local hasCollectText = false
+                            local collectText = ""
+                            for _, child in ipairs(btn:GetDescendants()) do
+                                if child:IsA("TextLabel") then
+                                    local labelText = child.Text or ""
+                                    local lowerText = labelText:lower()
+                                    if lowerText:find("coletar") or lowerText:find("collect") or 
+                                       lowerText:find("pegar") or lowerText:find("reivindicar") or
+                                       lowerText:find("claim") then
+                                        hasCollectText = true
+                                        collectText = labelText
+                                        break
+                                    end
+                                end
+                            end
+                            
+                            if hasCollectText then
+                                UpdateStatus("[Car Flipper] 🔧 Botão 'Coletar' (ImageButton) encontrado!")
+                                SafeClickButton(btn)
+                                UpdateStatus("[Car Flipper] ✅ Coletado via botão genérico!")
+                                success = true
+                                break
+                            end
+                        end
+                    end
+                end
+                if success then break end
+            end
+        end
+    end
+
+    if not success then
+        UpdateStatus("[Car Flipper] ❌ Nenhuma peça encontrada...")
     end
 
     -- RESUME A ATIVIDADE ANTERIOR
@@ -584,6 +646,7 @@ local function ClaimPartsLoop()
             UpdateStatus("[Car Flipper] 🔧 Iniciando coleta de peças...")
             local collectSuccess = false
             
+            -- Tenta coletar com múltiplas tentativas
             for attempt = 1, 3 do
                 collectSuccess = CollectParts()
                 if collectSuccess then 
@@ -593,6 +656,7 @@ local function ClaimPartsLoop()
             end
         end
 
+        -- Mostra o tempo até a próxima coleta
         local waitTime = ClaimParts.interval
         local minutes = math.floor(waitTime / 60)
         local seconds = waitTime % 60
@@ -603,6 +667,7 @@ local function ClaimPartsLoop()
             UpdateStatus(string.format("[Car Flipper] ⏱️ Próxima coleta em %ds", seconds))
         end
 
+        -- Aguarda o intervalo (1m42s)
         local startTime = tick()
         while ClaimParts.enabled and ClaimParts.isRunning and (tick() - startTime) < waitTime do
             task.wait(0.1)
@@ -654,7 +719,7 @@ local function ToggleClaimParts()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. FUNÇÕES DE COLETA DE DINHEIRO (mantidas)
+-- 10. FUNÇÕES DE COLETA DE DINHEIRO (modificadas)
 -- ═══════════════════════════════════════════════════════════════
 
 local function MatchesMoneyKeyword(text)
@@ -691,10 +756,22 @@ local function FindMoneyButton()
     for _, gui in ipairs(playerGui:GetChildren()) do
         if gui:IsA("ScreenGui") then
             for _, btn in ipairs(gui:GetDescendants()) do
-                if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                if btn:IsA("TextButton") then
                     if MatchesMoneyKeyword(btn.Text) then
                         return btn
                     end
+                    for _, child in ipairs(btn:GetDescendants()) do
+                        if child:IsA("TextLabel") and MatchesMoneyKeyword(child.Text) then
+                            return btn
+                        end
+                    end
+                elseif btn:IsA("ImageButton") then
+                    -- Verifica se tem texto
+                    local hasText = pcall(function() return btn.Text end)
+                    if hasText and MatchesMoneyKeyword(btn.Text) then
+                        return btn
+                    end
+                    -- Verifica TextLabels dentro
                     for _, child in ipairs(btn:GetDescendants()) do
                         if child:IsA("TextLabel") and MatchesMoneyKeyword(child.Text) then
                             return btn
@@ -799,7 +876,7 @@ local function FindAndCollectCash()
             for _, gui in ipairs(guis:GetChildren()) do
                 if gui:IsA("ScreenGui") then
                     for _, btn in ipairs(gui:GetDescendants()) do
-                        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                        if btn:IsA("TextButton") then
                             local btnText = btn.Text or ""
                             if btnText:lower():find("collect") or
                                btnText:lower():find("coletar") or
@@ -813,6 +890,23 @@ local function FindAndCollectCash()
                                     collected = true
                                 end)
                                 if collected then break end
+                            end
+                        elseif btn:IsA("ImageButton") then
+                            local hasText = pcall(function() return btn.Text end)
+                            if hasText then
+                                local btnText = btn.Text or ""
+                                if btnText:lower():find("collect") or
+                                   btnText:lower():find("coletar") or
+                                   btnText:lower():find("cash") or
+                                   btnText:lower():find("dinheiro") or
+                                   btnText:lower():find("reivindicar") or
+                                   btnText:lower():find("claim") then
+                                    pcall(function()
+                                        btn:Click()
+                                        collected = true
+                                    end)
+                                    if collected then break end
+                                end
                             end
                         end
                     end
@@ -977,15 +1071,52 @@ local function ToggleClaimCash()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. INTERFACE E CHECKBOXES (mantida)
+-- 11. RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
--- Aguarda o PlayerGui estar disponível
-local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+local ClockSystem = {
+    currentTime = "",
+    isRunning = true,
+}
+
+function ClockSystem:GetCurrentDateTime()
+    local success, result = pcall(function()
+        local response = HttpService:GetAsync("https://worldtimeapi.org/api/timezone/America/Sao_Paulo")
+        if response then
+            local data = HttpService:JSONDecode(response)
+            if data and data.datetime then
+                local datetime = data.datetime
+                local parts = {}
+                for part in string.gmatch(datetime, "[^T]+") do
+                    table.insert(parts, part)
+                end
+                if #parts >= 2 then
+                    local datePart = parts[1]
+                    local timePart = string.sub(parts[2], 1, 5)
+                    local dateFormatted = string.gsub(datePart, "(%d+)-(%d+)-(%d+)", "%3/%2/%1")
+                    return timePart .. " " .. dateFormatted
+                end
+            end
+        end
+    end)
+
+    if not success or not result then
+        local currentTime = os.time()
+        local dateTable = os.date("*t", currentTime)
+        return string.format("%02d:%02d %02d/%02d/%04d",
+            dateTable.hour, dateTable.min,
+            dateTable.day, dateTable.month, dateTable.year)
+    end
+    return result
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 12. BOTÃO FLUTUANTE E INTERFACE
+-- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "ToggleGUI"
-ToggleGui.Parent = playerGui
+ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ToggleGui.ResetOnSpawn = false
 ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -1005,10 +1136,10 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
--- Interface Principal (mantida igual ao original)
+-- Interface Principal
 local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "CarFlipperGUI"
-MainGui.Parent = playerGui
+MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MainGui.ResetOnSpawn = false
 MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -1031,7 +1162,8 @@ MainStroke.Color = Theme.Border
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
--- Barra de Títulolocal TitleBar = Instance.new("Frame")
+-- Barra de Título
+local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 48)
 TitleBar.BackgroundColor3 = Theme.SurfaceLight
@@ -1060,7 +1192,7 @@ DateTimeText.Name = "DateTimeText"
 DateTimeText.Size = UDim2.new(0.35, -10, 1, 0)
 DateTimeText.Position = UDim2.new(0.65, 0, 0, 0)
 DateTimeText.BackgroundTransparency = 1
-DateTimeText.Text = os.date("%H:%M %d/%m/%Y")
+DateTimeText.Text = ClockSystem:GetCurrentDateTime()
 DateTimeText.TextColor3 = Theme.TextMuted
 DateTimeText.TextSize = 14
 DateTimeText.Font = Enum.Font.Gotham
@@ -1082,7 +1214,7 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
--- Conteúdo
+-- Checkboxes e interface
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
 ContentContainer.Size = UDim2.new(1, -20, 1, -150)
@@ -1096,10 +1228,6 @@ Canvas.Name = "Canvas"
 Canvas.Size = UDim2.new(1, 0, 0, 0)
 Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
-
--- ═══════════════════════════════════════════════════════════════
--- 11. CHECKBOXES (mantidas do original)
--- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
 local allCheckboxStates = {}
@@ -1598,7 +1726,7 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. TOGGLE DO PAINEL
+-- 13. TOGGLE E ANIMAÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true
@@ -1712,11 +1840,14 @@ end)
 
 -- ATUALIZAÇÃO DO RELÓGIO
 RunService.Heartbeat:Connect(function()
-    DateTimeText.Text = os.date("%H:%M %d/%m/%Y")
+    local t = ClockSystem:GetCurrentDateTime()
+    if t ~= DateTimeText.Text then
+        DateTimeText.Text = t
+    end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. API GLOBAL
+-- 14. API GLOBAL
 -- ═══════════════════════════════════════════════════════════════
 
 _G.CarFlipper = {
@@ -1753,7 +1884,7 @@ _G.CarFlipper = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. ANIMAÇÃO DE ENTRADA
+-- 15. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 task.wait(0.1)
@@ -1767,17 +1898,11 @@ TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. FINAL
+-- 16. FINAL
 -- ═══════════════════════════════════════════════════════════════
 
-print("✅ Car Flipper - GomezXitado carregado com sucesso!")
+print("✅ Car Flipper - GomezXitado carregado!")
 print("📌 Clique no botão preto para abrir/fechar")
 print("⌨️  Tecla 'J' para abrir/fechar")
 print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
-print("🔧 Ative 'Claim Parts' para coletar peças automático (1m42s)")
-print("   🔴 INTERROMPE TOTALMENTE qualquer atividade")
-print("   🔍 Procura ESPECIFICAMENTE o botão 'Peças'")
-print("   📍 Teleporta até as peças")
-print("   📦 Coleta automaticamente")
-print("   🔄 Depois retorna à atividade anterior")
-print("✅ Erro corrigido: Adicionadas verificações de segurança no início")
+print("🔧 Ative 'Claim Parts' para colet
