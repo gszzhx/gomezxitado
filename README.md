@@ -1,10 +1,13 @@
 --[[
-    CAR FLIPPER - GOMEZXITADO
-    VERSÃO SIMPLIFICADA E FUNCIONAL
+    ═══════════════════════════════════════════════════════════════
+    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
+    Teleporte automático para área de coleta + Coleta automática
+    VERSÃO CORRIGIDA
+    ═══════════════════════════════════════════════════════════════
 --]]
 
 -- ═══════════════════════════════════════════════════════════════
--- 1. IMPORTAÇÕES
+-- 1. CONFIGURAÇÕES E IMPORTAÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local Players = game:GetService("Players")
@@ -15,10 +18,11 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 -- ═══════════════════════════════════════════════════════════════
--- 2. CONFIGURAÇÕES
+-- 2. CONFIGURAÇÕES DO CLAIM CASH
 -- ═══════════════════════════════════════════════════════════════
 
-local CASH_POSITION = Vector3.new(0, 5, 0) -- MUDE AQUI
+-- POSIÇÃO DE COLETA - AJUSTE CONFORME NECESSÁRIO
+local CASH_COLLECT_POSITION = Vector3.new(0, 5, 0) -- <-- MUDE AQUI para a posição correta
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. TEMA
@@ -28,33 +32,305 @@ local Theme = {
     Background = Color3.fromRGB(18, 18, 24),
     Surface = Color3.fromRGB(28, 28, 36),
     SurfaceLight = Color3.fromRGB(38, 38, 48),
+    SurfaceLighter = Color3.fromRGB(48, 48, 58),
     TextPrimary = Color3.fromRGB(235, 235, 245),
     TextSecondary = Color3.fromRGB(175, 175, 190),
     TextMuted = Color3.fromRGB(120, 120, 140),
     Accent = Color3.fromRGB(255, 200, 50),
+    AccentHover = Color3.fromRGB(255, 215, 75),
     Border = Color3.fromRGB(55, 55, 70),
+    Divider = Color3.fromRGB(42, 42, 55),
+    Shadow = Color3.fromRGB(0, 0, 0),
     CheckboxBG = Color3.fromRGB(45, 45, 58),
     CheckboxChecked = Color3.fromRGB(255, 200, 50),
+    Danger = Color3.fromRGB(220, 60, 60),
     SliderBG = Color3.fromRGB(35, 35, 45),
     SliderFill = Color3.fromRGB(255, 200, 50),
     SliderThumb = Color3.fromRGB(255, 215, 75),
+    Green = Color3.fromRGB(50, 220, 100),
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. VARIÁVEIS GLOBAIS
+-- 4. DECLARAÇÕES ANTECIPADAS (evita erro de "nil value")
+-- ═══════════════════════════════════════════════════════════════
+-- StatusLabel só é criado lá na seção 11 (interface), mas as funções
+-- de Claim Cash (seção 6) precisam chamar UpdateStatus antes disso.
+-- Por isso declaramos as duas ANTES de qualquer função usá-las.
+
+local StatusLabel -- será atribuído na seção 11, sem "local" de novo
+
+local function UpdateStatus(text)
+    if StatusLabel then
+        StatusLabel.Text = text
+    end
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 5. SISTEMA CLAIM CASH (estado)
 -- ═══════════════════════════════════════════════════════════════
 
-local ClaimCashEnabled = false
-local ClaimCashInterval = 5
-local ClaimCashTask = nil
-local StatusLabel = nil
-local Checkboxes = {}
+local ClaimCash = {
+    enabled = false,
+    interval = 5, -- segundos
+    task = nil,
+    isRunning = false,
+    cashPosition = CASH_COLLECT_POSITION,
+    collectRadius = 10, -- Raio para detectar dinheiro
+}
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. FUNÇÕES DO RELÓGIO
+-- 6. FUNÇÕES DE COLETA DE DINHEIRO
 -- ═══════════════════════════════════════════════════════════════
 
-local function GetCurrentTime()
+-- Função para encontrar e coletar dinheiro
+local function FindAndCollectCash()
+    local character = LocalPlayer.Character
+    if not character then return false end
+
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+
+    local collected = false
+    local cashObjects = {}
+
+    -- Procurar por objetos de dinheiro no workspace
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        local isCash = false
+        local objName = obj.Name:lower()
+
+        if objName:find("cash") or
+           objName:find("money") or
+           objName:find("coin") or
+           objName:find("dollar") or
+           objName:find("dinheiro") or
+           objName:find("golds") or
+           objName:find("moeda") then
+            isCash = true
+        end
+
+        if isCash and (obj:IsA("Part") or obj:IsA("Model") or obj:IsA("BasePart")) then
+            local position = nil
+            if obj:IsA("Model") and obj.PrimaryPart then
+                position = obj.PrimaryPart.Position
+            elseif obj:IsA("BasePart") then
+                position = obj.Position
+            end
+
+            if position then
+                local distance = (position - humanoidRootPart.Position).Magnitude
+                if distance < ClaimCash.collectRadius then
+                    table.insert(cashObjects, obj)
+                end
+            end
+        end
+    end
+
+    if #cashObjects > 0 then
+        for _, obj in ipairs(cashObjects) do
+            if obj and obj.Parent then
+                local success = pcall(function()
+                    local clickDetector = obj:FindFirstChild("ClickDetector")
+                    if clickDetector then
+                        clickDetector:Click()
+                        collected = true
+                        print("💰 Coletou dinheiro via ClickDetector: " .. obj.Name)
+                        return
+                    end
+
+                    local proximityPrompt = obj:FindFirstChild("ProximityPrompt")
+                    if proximityPrompt then
+                        proximityPrompt:InputHold()
+                        task.wait(0.1)
+                        proximityPrompt:InputRelease()
+                        collected = true
+                        print("💰 Coletou dinheiro via ProximityPrompt: " .. obj.Name)
+                        return
+                    end
+
+                    local tool = obj:FindFirstChild("Tool")
+                    if tool then
+                        local backpack = LocalPlayer:FindFirstChild("Backpack")
+                        if backpack then
+                            tool.Parent = backpack
+                            collected = true
+                            print("💰 Coletou dinheiro via Tool: " .. obj.Name)
+                            return
+                        end
+                    end
+
+                    local touched = obj:FindFirstChild("Touched")
+                    if touched then
+                        firetouchinterest(humanoidRootPart, obj, 0)
+                        task.wait(0.1)
+                        firetouchinterest(humanoidRootPart, obj, 1)
+                        collected = true
+                        print("💰 Coletou dinheiro via Touch: " .. obj.Name)
+                        return
+                    end
+
+                    if obj:IsA("BasePart") or obj:IsA("Model") then
+                        obj:Destroy()
+                        collected = true
+                        print("💰 Coletou dinheiro (destruído): " .. obj.Name)
+                        return
+                    end
+                end)
+
+                if success and collected then
+                    break
+                end
+            end
+        end
+    end
+
+    if not collected then
+        local guis = LocalPlayer:FindFirstChild("PlayerGui")
+        if guis then
+            for _, gui in ipairs(guis:GetChildren()) do
+                if gui:IsA("ScreenGui") then
+                    for _, btn in ipairs(gui:GetDescendants()) do
+                        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                            local btnText = btn.Text or ""
+                            if btnText:lower():find("collect") or
+                               btnText:lower():find("coletar") or
+                               btnText:lower():find("cash") or
+                               btnText:lower():find("dinheiro") or
+                               btnText:lower():find("reivindicar") or
+                               btnText:lower():find("claim") then
+
+                                pcall(function()
+                                    btn:Click()
+                                    collected = true
+                                    print("💰 Coletou dinheiro via botão: " .. btnText)
+                                end)
+                                if collected then break end
+                            end
+                        end
+                    end
+                end
+                if collected then break end
+            end
+        end
+    end
+
+    return collected
+end
+
+-- Teleportar para posição de coleta
+local function TeleportToCash()
+    if not ClaimCash.enabled then return false end
+
+    local character = LocalPlayer.Character
+    if not character then return false end
+
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+
+    UpdateStatus("[Car Flipper] Teleportando para Cash...")
+
+    humanoidRootPart.CFrame = CFrame.new(ClaimCash.cashPosition)
+    task.wait(0.5)
+
+    return true
+end
+
+-- Coletar dinheiro
+local function CollectCash()
+    if not ClaimCash.enabled then return false end
+
+    UpdateStatus("[Car Flipper] Coletando dinheiro...")
+
+    local collected = FindAndCollectCash()
+
+    if collected then
+        UpdateStatus("[Car Flipper] Dinheiro coletado!")
+        return true
+    else
+        UpdateStatus("[Car Flipper] Nenhum dinheiro encontrado...")
+        return false
+    end
+end
+
+-- Loop principal do Claim Cash
+local function ClaimCashLoop()
+    while ClaimCash.enabled and ClaimCash.isRunning do
+        local teleportSuccess = TeleportToCash()
+        if not teleportSuccess then
+            UpdateStatus("[Car Flipper] Erro ao teleportar, tentando novamente...")
+            task.wait(1)
+        end
+
+        local collectSuccess = false
+        for attempt = 1, 3 do
+            collectSuccess = CollectCash()
+            if collectSuccess then break end
+            task.wait(0.5)
+        end
+
+        if not collectSuccess then
+            UpdateStatus("[Car Flipper] Nenhum dinheiro disponível...")
+        end
+
+        local waitTime = ClaimCash.interval
+        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
+
+        local startTime = tick()
+        while ClaimCash.enabled and ClaimCash.isRunning and (tick() - startTime) < waitTime do
+            task.wait(0.1)
+        end
+    end
+
+    ClaimCash.isRunning = false
+    if not ClaimCash.enabled then
+        UpdateStatus("[Car Flipper] Claim Cash parado")
+    end
+end
+
+-- Iniciar Claim Cash
+local function StartClaimCash()
+    if ClaimCash.isRunning then return end
+    if not ClaimCash.enabled then return end
+
+    ClaimCash.isRunning = true
+    UpdateStatus("[Car Flipper] Claim Cash iniciado")
+
+    ClaimCash.task = task.spawn(ClaimCashLoop)
+end
+
+-- Parar Claim Cash
+local function StopClaimCash()
+    ClaimCash.enabled = false
+    ClaimCash.isRunning = false
+
+    if ClaimCash.task then
+        task.cancel(ClaimCash.task)
+        ClaimCash.task = nil
+    end
+
+    UpdateStatus("[Car Flipper] Claim Cash parado")
+end
+
+-- Alternar Claim Cash
+local function ToggleClaimCash()
+    ClaimCash.enabled = not ClaimCash.enabled
+
+    if ClaimCash.enabled then
+        StartClaimCash()
+    else
+        StopClaimCash()
+    end
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 7. RELÓGIO
+-- ═══════════════════════════════════════════════════════════════
+
+local ClockSystem = {
+    currentTime = "",
+    isRunning = true,
+}
+
+function ClockSystem:GetCurrentDateTime()
     local success, result = pcall(function()
         local response = HttpService:GetAsync("https://worldtimeapi.org/api/timezone/America/Sao_Paulo")
         if response then
@@ -74,175 +350,33 @@ local function GetCurrentTime()
             end
         end
     end)
-    
+
     if not success or not result then
-        local t = os.time()
-        local d = os.date("*t", t)
-        return string.format("%02d:%02d %02d/%02d/%04d", d.hour, d.min, d.day, d.month, d.year)
+        local currentTime = os.time()
+        local dateTable = os.date("*t", currentTime)
+        return string.format("%02d:%02d %02d/%02d/%04d",
+            dateTable.hour, dateTable.min,
+            dateTable.day, dateTable.month, dateTable.year)
     end
     return result
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. FUNÇÕES DO CLAIM CASH
--- ═══════════════════════════════════════════════════════════════
-
-local function UpdateStatus(text)
-    if StatusLabel then
-        StatusLabel.Text = text
-    end
-end
-
-local function TeleportToCash()
-    local char = LocalPlayer.Character
-    if not char then return false end
-    
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return false end
-    
-    UpdateStatus("[Car Flipper] Teleportando para Cash...")
-    root.CFrame = CFrame.new(CASH_POSITION)
-    task.wait(0.5)
-    return true
-end
-
-local function CollectCash()
-    UpdateStatus("[Car Flipper] Coletando dinheiro...")
-    
-    local char = LocalPlayer.Character
-    if not char then return false end
-    
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return false end
-    
-    local collected = false
-    
-    -- Procurar objetos de dinheiro
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("Model") then
-            local name = obj.Name:lower()
-            if name:find("cash") or name:find("money") or name:find("coin") or 
-               name:find("dollar") or name:find("dinheiro") or name:find("moeda") then
-                
-                local pos = nil
-                if obj:IsA("Model") and obj.PrimaryPart then
-                    pos = obj.PrimaryPart.Position
-                elseif obj:IsA("BasePart") then
-                    pos = obj.Position
-                end
-                
-                if pos and (pos - root.Position).Magnitude < 20 then
-                    pcall(function()
-                        -- Tenta diferentes métodos
-                        local click = obj:FindFirstChild("ClickDetector")
-                        if click then click:Click() collected = true return end
-                        
-                        local prompt = obj:FindFirstChild("ProximityPrompt")
-                        if prompt then prompt:InputHold() task.wait(0.1) prompt:InputRelease() collected = true return end
-                        
-                        if obj:IsA("BasePart") then
-                            firetouchinterest(root, obj, 0)
-                            task.wait(0.1)
-                            firetouchinterest(root, obj, 1)
-                            collected = true
-                            return
-                        end
-                        
-                        obj:Destroy()
-                        collected = true
-                    end)
-                    if collected then break end
-                end
-            end
-        end
-    end
-    
-    -- Tentar via interface
-    if not collected then
-        local guis = LocalPlayer:FindFirstChild("PlayerGui")
-        if guis then
-            for _, gui in ipairs(guis:GetChildren()) do
-                if gui:IsA("ScreenGui") then
-                    for _, btn in ipairs(gui:GetDescendants()) do
-                        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-                            local text = (btn.Text or ""):lower()
-                            if text:find("collect") or text:find("coletar") or text:find("cash") or 
-                               text:find("dinheiro") or text:find("claim") or text:find("pegar") then
-                                pcall(function() btn:Click() collected = true end)
-                                if collected then break end
-                            end
-                        end
-                    end
-                end
-                if collected then break end
-            end
-        end
-    end
-    
-    UpdateStatus(collected and "[Car Flipper] Dinheiro coletado!" or "[Car Flipper] Nenhum dinheiro encontrado...")
-    return collected
-end
-
-local function ClaimCashLoop()
-    while ClaimCashEnabled do
-        TeleportToCash()
-        
-        for i = 1, 3 do
-            if not ClaimCashEnabled then break end
-            if CollectCash() then break end
-            task.wait(0.5)
-        end
-        
-        local waitTime = ClaimCashInterval
-        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
-        
-        local start = tick()
-        while ClaimCashEnabled and (tick() - start) < waitTime do
-            task.wait(0.1)
-        end
-    end
-    
-    UpdateStatus("[Car Flipper] Claim Cash parado")
-end
-
-local function StartClaimCash()
-    if ClaimCashTask then return end
-    if not ClaimCashEnabled then return end
-    
-    UpdateStatus("[Car Flipper] Claim Cash iniciado")
-    ClaimCashTask = task.spawn(ClaimCashLoop)
-end
-
-local function StopClaimCash()
-    ClaimCashEnabled = false
-    if ClaimCashTask then
-        task.cancel(ClaimCashTask)
-        ClaimCashTask = nil
-    end
-    UpdateStatus("[Car Flipper] Claim Cash parado")
-end
-
-local function ToggleClaimCash()
-    ClaimCashEnabled = not ClaimCashEnabled
-    if ClaimCashEnabled then
-        StartClaimCash()
-    else
-        StopClaimCash()
-    end
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 7. BOTÃO FLUTUANTE
+-- 8. BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "ToggleGUI"
 ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ToggleGui.ResetOnSpawn = false
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Name = "ToggleButton"
 ToggleButton.Size = UDim2.new(0, 36, 0, 36)
 ToggleButton.Position = UDim2.new(1, -52, 0, 8)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+ToggleButton.BackgroundTransparency = 0
 ToggleButton.Image = "rbxassetid://6031091079"
 ToggleButton.ImageColor3 = Color3.fromRGB(200, 200, 210)
 ToggleButton.BorderSizePixel = 0
@@ -254,14 +388,17 @@ ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. INTERFACE PRINCIPAL
+-- 9. INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local MainGui = Instance.new("ScreenGui")
+MainGui.Name = "CarFlipperGUI"
 MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MainGui.ResetOnSpawn = false
+MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 920, 0, 560)
 MainFrame.Position = UDim2.new(0.5, -460, 0.5, -280)
 MainFrame.BackgroundColor3 = Theme.Background
@@ -280,10 +417,11 @@ MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. BARRA DE TÍTULO
+-- 10. BARRA DE TÍTULO
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 48)
 TitleBar.BackgroundColor3 = Theme.SurfaceLight
 TitleBar.BorderSizePixel = 0
@@ -294,7 +432,8 @@ TitleCorner.CornerRadius = UDim.new(0, 14)
 TitleCorner.Parent = TitleBar
 
 local TitleText = Instance.new("TextLabel")
-TitleText.Size = UDim2.new(0.6, -18, 1, 0)
+TitleText.Name = "Title"
+TitleText.Size = UDim2.new(0.65, -18, 1, 0)
 TitleText.Position = UDim2.new(0, 18, 0, 0)
 TitleText.BackgroundTransparency = 1
 TitleText.Text = "Car Flipper - GomezXitado"
@@ -306,10 +445,11 @@ TitleText.TextYAlignment = Enum.TextYAlignment.Center
 TitleText.Parent = TitleBar
 
 local DateTimeText = Instance.new("TextLabel")
-DateTimeText.Size = UDim2.new(0.4, -10, 1, 0)
-DateTimeText.Position = UDim2.new(0.6, 0, 0, 0)
+DateTimeText.Name = "DateTimeText"
+DateTimeText.Size = UDim2.new(0.35, -10, 1, 0)
+DateTimeText.Position = UDim2.new(0.65, 0, 0, 0)
 DateTimeText.BackgroundTransparency = 1
-DateTimeText.Text = GetCurrentTime()
+DateTimeText.Text = ClockSystem:GetCurrentDateTime()
 DateTimeText.TextColor3 = Theme.TextMuted
 DateTimeText.TextSize = 14
 DateTimeText.Font = Enum.Font.Gotham
@@ -318,16 +458,18 @@ DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
 DateTimeText.Parent = TitleBar
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. ABA AUTO
+-- 11. ABA AUTO
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
+TabContainer.Name = "TabContainer"
 TabContainer.Size = UDim2.new(1, -20, 0, 42)
 TabContainer.Position = UDim2.new(0, 10, 0, 54)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
 local AutoTab = Instance.new("TextButton")
+AutoTab.Name = "AutoTab"
 AutoTab.Size = UDim2.new(0.15, 0, 1, -4)
 AutoTab.Position = UDim2.new(0.425, 0, 0, 2)
 AutoTab.BackgroundColor3 = Theme.Accent
@@ -343,10 +485,14 @@ AutoTabCorner.CornerRadius = UDim.new(0, 8)
 AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. STATUS
+-- 12. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
+-- ATENÇÃO: sem "local" aqui, pois StatusLabel já foi declarada
+-- (como local vazia) lá na seção 4. Isso garante que UpdateStatus
+-- enxergue o mesmo objeto.
 StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
 StatusLabel.Position = UDim2.new(0, 12, 0, 104)
 StatusLabel.BackgroundTransparency = 1
@@ -359,10 +505,11 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. CONTEÚDO
+-- 13. CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
+ContentContainer.Name = "ContentContainer"
 ContentContainer.Size = UDim2.new(1, -20, 1, -150)
 ContentContainer.Position = UDim2.new(0, 10, 0, 136)
 ContentContainer.BackgroundTransparency = 1
@@ -370,51 +517,59 @@ ContentContainer.ClipsDescendants = true
 ContentContainer.Parent = MainFrame
 
 local Canvas = Instance.new("Frame")
+Canvas.Name = "Canvas"
 Canvas.Size = UDim2.new(1, 0, 0, 0)
 Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. CHECKBOX COM SLIDER
+-- 14. CHECKBOXES COM SLIDER
 -- ═══════════════════════════════════════════════════════════════
 
-local function CreateCheckbox(parent, name, labelText, x, y, hasSlider)
+local Checkboxes = {}
+
+local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider)
     local container = Instance.new("Frame")
+    container.Name = name .. "Container"
     container.Size = UDim2.new(0, 165, 0, hasSlider and 70 or 30)
-    container.Position = UDim2.new(x, 0, 0, y)
+    container.Position = UDim2.new(xPos, 0, 0, yPos)
     container.BackgroundTransparency = 1
     container.Parent = parent
-    
-    local cbContainer = Instance.new("Frame")
-    cbContainer.Size = UDim2.new(0, 165, 0, 30)
-    cbContainer.Position = UDim2.new(0, 0, 0, 0)
-    cbContainer.BackgroundTransparency = 1
-    cbContainer.Parent = container
-    
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(0, 20, 0, 20)
-    bg.Position = UDim2.new(0, 0, 0.5, -10)
-    bg.BackgroundColor3 = Theme.CheckboxBG
-    bg.BorderSizePixel = 0
-    bg.Parent = cbContainer
-    
-    local bgCorner = Instance.new("UICorner")
-    bgCorner.CornerRadius = UDim.new(0, 5)
-    bgCorner.Parent = bg
-    
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(1, 0, 1, 0)
-    icon.BackgroundTransparency = 1
-    icon.Text = "✓"
-    icon.TextColor3 = Theme.Background
-    icon.TextSize = 16
-    icon.Font = Enum.Font.GothamBold
-    icon.TextXAlignment = Enum.TextXAlignment.Center
-    icon.TextYAlignment = Enum.TextYAlignment.Center
-    icon.Visible = false
-    icon.Parent = bg
-    
+
+    local checkboxContainer = Instance.new("Frame")
+    checkboxContainer.Name = name
+    checkboxContainer.Size = UDim2.new(0, 165, 0, 30)
+    checkboxContainer.Position = UDim2.new(0, 0, 0, 0)
+    checkboxContainer.BackgroundTransparency = 1
+    checkboxContainer.Parent = container
+
+    local checkBG = Instance.new("Frame")
+    checkBG.Name = "CheckBG"
+    checkBG.Size = UDim2.new(0, 20, 0, 20)
+    checkBG.Position = UDim2.new(0, 0, 0.5, -10)
+    checkBG.BackgroundColor3 = Theme.CheckboxBG
+    checkBG.BorderSizePixel = 0
+    checkBG.Parent = checkboxContainer
+
+    local checkCorner = Instance.new("UICorner")
+    checkCorner.CornerRadius = UDim.new(0, 5)
+    checkCorner.Parent = checkBG
+
+    local checkIcon = Instance.new("TextLabel")
+    checkIcon.Name = "CheckIcon"
+    checkIcon.Size = UDim2.new(1, 0, 1, 0)
+    checkIcon.BackgroundTransparency = 1
+    checkIcon.Text = "✓"
+    checkIcon.TextColor3 = Theme.Background
+    checkIcon.TextSize = 16
+    checkIcon.Font = Enum.Font.GothamBold
+    checkIcon.TextXAlignment = Enum.TextXAlignment.Center
+    checkIcon.TextYAlignment = Enum.TextYAlignment.Center
+    checkIcon.Visible = false
+    checkIcon.Parent = checkBG
+
     local label = Instance.new("TextLabel")
+    label.Name = "Label"
     label.Size = UDim2.new(1, -26, 1, 0)
     label.Position = UDim2.new(0, 26, 0, 0)
     label.BackgroundTransparency = 1
@@ -424,228 +579,313 @@ local function CreateCheckbox(parent, name, labelText, x, y, hasSlider)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.TextYAlignment = Enum.TextYAlignment.Center
-    label.Parent = cbContainer
-    
-    local slider = nil
+    label.Parent = checkboxContainer
+
+    local sliderContainer = nil
     local sliderFill = nil
     local sliderThumb = nil
-    local sliderText = nil
-    
+    local sliderValueText = nil
+
     if hasSlider then
-        slider = Instance.new("Frame")
-        slider.Size = UDim2.new(0, 155, 0, 30)
-        slider.Position = UDim2.new(0, 0, 0, 34)
-        slider.BackgroundColor3 = Theme.SliderBG
-        slider.BorderSizePixel = 0
-        slider.Visible = false
-        slider.Parent = container
-        
+        sliderContainer = Instance.new("Frame")
+        sliderContainer.Name = "SliderContainer"
+        sliderContainer.Size = UDim2.new(0, 155, 0, 30)
+        sliderContainer.Position = UDim2.new(0, 0, 0, 34)
+        sliderContainer.BackgroundColor3 = Theme.SliderBG
+        sliderContainer.BackgroundTransparency = 0
+        sliderContainer.BorderSizePixel = 0
+        sliderContainer.Visible = false
+        sliderContainer.Parent = container
+
         local sliderCorner = Instance.new("UICorner")
         sliderCorner.CornerRadius = UDim.new(0, 8)
-        sliderCorner.Parent = slider
-        
-        local bgSlider = Instance.new("Frame")
-        bgSlider.Size = UDim2.new(1, -10, 0, 4)
-        bgSlider.Position = UDim2.new(0, 5, 0.5, -2)
-        bgSlider.BackgroundColor3 = Theme.SurfaceLight
-        bgSlider.BorderSizePixel = 0
-        bgSlider.Parent = slider
-        
-        local bgSliderCorner = Instance.new("UICorner")
-        bgSliderCorner.CornerRadius = UDim.new(1, 0)
-        bgSliderCorner.Parent = bgSlider
-        
+        sliderCorner.Parent = sliderContainer
+
+        local sliderBg = Instance.new("Frame")
+        sliderBg.Name = "SliderBg"
+        sliderBg.Size = UDim2.new(1, -10, 0, 4)
+        sliderBg.Position = UDim2.new(0, 5, 0.5, -2)
+        sliderBg.BackgroundColor3 = Theme.SurfaceLight
+        sliderBg.BorderSizePixel = 0
+        sliderBg.Parent = sliderContainer
+
+        local sliderBgCorner = Instance.new("UICorner")
+        sliderBgCorner.CornerRadius = UDim.new(1, 0)
+        sliderBgCorner.Parent = sliderBg
+
         sliderFill = Instance.new("Frame")
+        sliderFill.Name = "SliderFill"
         sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+        sliderFill.Position = UDim2.new(0, 0, 0, 0)
         sliderFill.BackgroundColor3 = Theme.SliderFill
         sliderFill.BorderSizePixel = 0
-        sliderFill.Parent = bgSlider
-        
-        local fillCorner = Instance.new("UICorner")
-        fillCorner.CornerRadius = UDim.new(1, 0)
-        fillCorner.Parent = sliderFill
-        
+        sliderFill.Parent = sliderBg
+
+        local sliderFillCorner = Instance.new("UICorner")
+        sliderFillCorner.CornerRadius = UDim.new(1, 0)
+        sliderFillCorner.Parent = sliderFill
+
         sliderThumb = Instance.new("Frame")
+        sliderThumb.Name = "SliderThumb"
         sliderThumb.Size = UDim2.new(0, 14, 0, 14)
         sliderThumb.Position = UDim2.new(0.5, -7, 0.5, -7)
         sliderThumb.BackgroundColor3 = Theme.SliderThumb
         sliderThumb.BorderSizePixel = 0
-        sliderThumb.Parent = slider
-        
+        sliderThumb.Parent = sliderContainer
+
         local thumbCorner = Instance.new("UICorner")
         thumbCorner.CornerRadius = UDim.new(1, 0)
         thumbCorner.Parent = sliderThumb
-        
-        sliderText = Instance.new("TextLabel")
-        sliderText.Size = UDim2.new(0, 50, 1, 0)
-        sliderText.Position = UDim2.new(1, 5, 0, 0)
-        sliderText.BackgroundTransparency = 1
-        sliderText.Text = "5 ms"
-        sliderText.TextColor3 = Theme.TextSecondary
-        sliderText.TextSize = 11
-        sliderText.Font = Enum.Font.GothamMedium
-        sliderText.TextXAlignment = Enum.TextXAlignment.Left
-        sliderText.TextYAlignment = Enum.TextYAlignment.Center
-        sliderText.Parent = slider
-        
-        local minVal = 0.3
-        local maxVal = 300
-        local curVal = 5
-        local dragging = false
-        
-        local function UpdateSlider(val)
-            curVal = math.max(minVal, math.min(maxVal, val))
-            local pct = (curVal - minVal) / (maxVal - minVal)
-            sliderFill.Size = UDim2.new(pct, 0, 1, 0)
-            sliderThumb.Position = UDim2.new(pct, -7, 0.5, -7)
-            sliderText.Text = (curVal >= 1 and string.format("%.0f ms", curVal) or string.format("%.1f ms", curVal))
-            if name == "ClaimCash" then ClaimCashInterval = curVal end
+
+        sliderValueText = Instance.new("TextLabel")
+        sliderValueText.Name = "ValueText"
+        sliderValueText.Size = UDim2.new(0, 50, 1, 0)
+        sliderValueText.Position = UDim2.new(1, 5, 0, 0)
+        sliderValueText.BackgroundTransparency = 1
+        sliderValueText.Text = "5 ms"
+        sliderValueText.TextColor3 = Theme.TextSecondary
+        sliderValueText.TextSize = 11
+        sliderValueText.Font = Enum.Font.GothamMedium
+        sliderValueText.TextXAlignment = Enum.TextXAlignment.Left
+        sliderValueText.TextYAlignment = Enum.TextYAlignment.Center
+        sliderValueText.Parent = sliderContainer
+
+        local minValue = 0.3
+        local maxValue = 300
+        local currentValue = 5
+        local isDraggingSlider = false
+
+        local function UpdateSlider(value)
+            currentValue = math.max(minValue, math.min(maxValue, value))
+            local percent = (currentValue - minValue) / (maxValue - minValue)
+
+            sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            sliderThumb.Position = UDim2.new(percent, -7, 0.5, -7)
+
+            if currentValue >= 1 then
+                sliderValueText.Text = string.format("%.0f ms", currentValue)
+            else
+                sliderValueText.Text = string.format("%.1f ms", currentValue)
+            end
+
+            if name == "ClaimCash" then
+                ClaimCash.interval = currentValue
+            end
         end
-        
-        local function GetPct(input)
-            local pos = slider.AbsolutePosition
-            local size = slider.AbsoluteSize.X - 10
-            local pct = (input.Position.X - pos.X - 5) / size
-            return math.max(0, math.min(1, pct))
+
+        local function GetSliderPercent(input)
+            local sliderPos = sliderContainer.AbsolutePosition
+            local sliderSize = sliderContainer.AbsoluteSize.X - 10
+            local inputPos = input.Position.X
+
+            local percent = (inputPos - sliderPos.X - 5) / sliderSize
+            percent = math.max(0, math.min(1, percent))
+            return percent
         end
-        
-        slider.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                local pct = GetPct(input)
-                UpdateSlider(minVal + (maxVal - minVal) * pct)
+
+        sliderContainer.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or
+               input.UserInputType == Enum.UserInputType.Touch then
+                isDraggingSlider = true
+                local percent = GetSliderPercent(input)
+                local value = minValue + (maxValue - minValue) * percent
+                UpdateSlider(value)
             end
         end)
-        
+
         UserInputService.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local pct = GetPct(input)
-                UpdateSlider(minVal + (maxVal - minVal) * pct)
+            if isDraggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or
+                                     input.UserInputType == Enum.UserInputType.Touch) then
+                local percent = GetSliderPercent(input)
+                local value = minValue + (maxValue - minValue) * percent
+                UpdateSlider(value)
             end
         end)
-        
+
         UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = false
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or
+               input.UserInputType == Enum.UserInputType.Touch then
+                isDraggingSlider = false
             end
         end)
-        
-        UpdateSlider(curVal)
+
+        UpdateSlider(currentValue)
     end
-    
-    local state = { checked = false, bg = bg, icon = icon, slider = slider, hasSlider = hasSlider, name = name }
-    
+
+    local state = {
+        checked = false,
+        checkBG = checkBG,
+        checkIcon = checkIcon,
+        label = label,
+        container = container,
+        sliderContainer = sliderContainer,
+        hasSlider = hasSlider or false,
+        name = name,
+    }
+
     function state:Toggle()
         state.checked = not state.checked
+
         if state.checked then
-            TweenService:Create(state.bg, TweenInfo.new(0.15), { BackgroundColor3 = Theme.CheckboxChecked }):Play()
-            state.icon.Visible = true
-            if state.hasSlider and slider then
-                slider.Visible = true
-                TweenService:Create(slider, TweenInfo.new(0.3), { BackgroundTransparency = 0 }):Play()
-                if state.name == "ClaimCash" then ToggleClaimCash() end
+            TweenService:Create(state.checkBG, TweenInfo.new(0.15), {
+                BackgroundColor3 = Theme.CheckboxChecked
+            }):Play()
+            state.checkIcon.Visible = true
+
+            if state.hasSlider and sliderContainer then
+                sliderContainer.Visible = true
+                TweenService:Create(sliderContainer, TweenInfo.new(0.3), {
+                    BackgroundTransparency = 0
+                }):Play()
+
+                if state.name == "ClaimCash" then
+                    ToggleClaimCash()
+                end
             end
         else
-            TweenService:Create(state.bg, TweenInfo.new(0.15), { BackgroundColor3 = Theme.CheckboxBG }):Play()
-            state.icon.Visible = false
-            if state.hasSlider and slider then
-                TweenService:Create(slider, TweenInfo.new(0.3), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(state.checkBG, TweenInfo.new(0.15), {
+                BackgroundColor3 = Theme.CheckboxBG
+            }):Play()
+            state.checkIcon.Visible = false
+
+            if state.hasSlider and sliderContainer then
+                TweenService:Create(sliderContainer, TweenInfo.new(0.3), {
+                    BackgroundTransparency = 1
+                }):Play()
                 task.wait(0.3)
-                slider.Visible = false
-                if state.name == "ClaimCash" then ToggleClaimCash() end
+                sliderContainer.Visible = false
+
+                if state.name == "ClaimCash" then
+                    ToggleClaimCash()
+                end
             end
         end
     end
-    
-    cbContainer.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+
+    checkboxContainer.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or
+           input.UserInputType == Enum.UserInputType.Touch then
             state:Toggle()
         end
     end)
-    
+
     Checkboxes[name] = state
     return state
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. SEÇÕES
+-- 15. SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
-local Sections = {
-    { title = "Base", items = { {name = "Claim Cash", slider = true}, "Claim Parts", "Buy Upgrades", "Claim Containers", "Open Containers", "Claim Quests", "Deliver Junk" } },
-    { title = "Cars", items = { "Fix Cars", "Sell Fixed Cars", "Update Stands", "Buy, Fix, Sell Cheapest" } },
-    { title = "Rewards", items = { "Claim Playtime Rewards", "Claim Daily Rewards" } },
+local SectionsData = {
+    {
+        title = "Base",
+        items = {
+            {name = "Claim Cash", hasSlider = true},
+            "Claim Parts",
+            "Buy Upgrades",
+            "Claim Containers",
+            "Open Containers",
+            "Claim Quests",
+            "Deliver Junk",
+        }
+    },
+    {
+        title = "Cars",
+        items = {
+            "Fix Cars",
+            "Sell Fixed Cars",
+            "Update Stands",
+            "Buy, Fix, Sell Cheapest",
+        }
+    },
+    {
+        title = "Rewards",
+        items = {
+            "Claim Playtime Rewards",
+            "Claim Daily Rewards",
+        }
+    }
 }
 
-local sw = 280
-local sp = 20
-local sx = 10
-local totalW = (#Sections * (sw + sp)) - sp + 20
+local sectionWidth = 280
+local spacing = 20
+local startX = 10
+local totalWidth = (#SectionsData * (sectionWidth + spacing)) - spacing + 20
 
-for i, sec in ipairs(Sections) do
-    local x = sx + ((i - 1) * (sw + sp))
-    
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(0, sw, 0, 0)
-    container.Position = UDim2.new(0, x, 0, 0)
-    container.BackgroundColor3 = Theme.Surface
-    container.BorderSizePixel = 0
-    container.Parent = Canvas
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = container
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Theme.Border
-    stroke.Thickness = 1
-    stroke.Parent = container
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -16, 0, 32)
-    title.Position = UDim2.new(0, 8, 0, 4)
-    title.BackgroundTransparency = 1
-    title.Text = sec.title
-    title.TextColor3 = Theme.TextMuted
-    title.TextSize = 12
-    title.Font = Enum.Font.GothamBold
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.TextYAlignment = Enum.TextYAlignment.Center
-    title.Parent = container
-    
-    local div = Instance.new("Frame")
-    div.Size = UDim2.new(0.9, 0, 0, 1)
-    div.Position = UDim2.new(0.05, 0, 0, 40)
-    div.BackgroundColor3 = Theme.Divider
-    div.BorderSizePixel = 0
-    div.Parent = container
-    
-    local sy = 48
-    for j, item in ipairs(sec.items) do
-        local y = sy + ((j - 1) * 32)
+for i, sectionData in ipairs(SectionsData) do
+    local xPos = startX + ((i - 1) * (sectionWidth + spacing))
+
+    local sectionContainer = Instance.new("Frame")
+    sectionContainer.Name = sectionData.title .. "Section"
+    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, 0)
+    sectionContainer.Position = UDim2.new(0, xPos, 0, 0)
+    sectionContainer.BackgroundColor3 = Theme.Surface
+    sectionContainer.BackgroundTransparency = 0
+    sectionContainer.BorderSizePixel = 0
+    sectionContainer.Parent = Canvas
+
+    local sectionCorner = Instance.new("UICorner")
+    sectionCorner.CornerRadius = UDim.new(0, 10)
+    sectionCorner.Parent = sectionContainer
+
+    local sectionStroke = Instance.new("UIStroke")
+    sectionStroke.Color = Theme.Border
+    sectionStroke.Thickness = 1
+    sectionStroke.Parent = sectionContainer
+
+    local sectionTitle = Instance.new("TextLabel")
+    sectionTitle.Name = "Title"
+    sectionTitle.Size = UDim2.new(1, -16, 0, 32)
+    sectionTitle.Position = UDim2.new(0, 8, 0, 4)
+    sectionTitle.BackgroundTransparency = 1
+    sectionTitle.Text = sectionData.title
+    sectionTitle.TextColor3 = Theme.TextMuted
+    sectionTitle.TextSize = 12
+    sectionTitle.Font = Enum.Font.GothamBold
+    sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+    sectionTitle.TextYAlignment = Enum.TextYAlignment.Center
+    sectionTitle.Parent = sectionContainer
+
+    local divider = Instance.new("Frame")
+    divider.Name = "Divider"
+    divider.Size = UDim2.new(0.9, 0, 0, 1)
+    divider.Position = UDim2.new(0.05, 0, 0, 40)
+    divider.BackgroundColor3 = Theme.Divider
+    divider.BorderSizePixel = 0
+    divider.Parent = sectionContainer
+
+    local startY = 48
+    for j, item in ipairs(sectionData.items) do
+        local yPos = startY + ((j - 1) * 32)
         local hasSlider = false
-        local label = item
+        local labelText = item
+
         if type(item) == "table" then
-            label = item.name
-            hasSlider = item.slider or false
+            labelText = item.name
+            hasSlider = item.hasSlider or false
         end
-        local name = label:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
-        CreateCheckbox(container, name, label, 0, y, hasSlider)
+
+        local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
+        CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yPos, hasSlider)
     end
-    
-    local totalH = 48
-    for j, item in ipairs(sec.items) do
-        local hs = false
-        if type(item) == "table" then hs = item.slider or false end
-        totalH = totalH + (hs and 70 or 30)
+
+    -- Calcula a altura total do container com base nos itens (com ou sem slider)
+    local totalHeight = 48
+    for j, item in ipairs(sectionData.items) do
+        local hasSlider = false
+        if type(item) == "table" then
+            hasSlider = item.hasSlider or false
+        end
+        totalHeight = totalHeight + (hasSlider and 70 or 30)
     end
-    container.Size = UDim2.new(0, sw, 0, totalH + 16)
+    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight + 16)
 end
 
-Canvas.Size = UDim2.new(0, totalW, 0, 380)
+Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. TOGGLE DO PAINEL
+-- 16. TOGGLE DO PAINEL
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true
@@ -655,7 +895,7 @@ local function ToggleGUI()
     if isAnimating then return end
     isAnimating = true
     isOpen = not isOpen
-    
+
     if isOpen then
         MainFrame.Visible = true
         MainFrame.Size = UDim2.new(0, 920, 0, 0)
@@ -677,12 +917,12 @@ local function ToggleGUI()
         MainFrame.Visible = false
         ToggleButton.ImageColor3 = Color3.fromRGB(150, 150, 160)
     end
-    
+
     isAnimating = false
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. ARRASTO DO BOTÃO
+-- 17. ARRASTO DO BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local dragging = false
@@ -706,10 +946,10 @@ UserInputService.InputChanged:Connect(function(i)
             dragActive = true
             local nx = btnStart.X.Offset + (pos.X - dragStart.X)
             local ny = btnStart.Y.Offset + (pos.Y - dragStart.Y)
-            local sx = ToggleGui.AbsoluteSize.X
-            local sy = ToggleGui.AbsoluteSize.Y
-            nx = math.max(0, math.min(nx, sx - 46))
-            ny = math.max(0, math.min(ny, sy - 86))
+            local screenX = ToggleGui.AbsoluteSize.X
+            local screenY = ToggleGui.AbsoluteSize.Y
+            nx = math.max(0, math.min(nx, screenX - 46))
+            ny = math.max(0, math.min(ny, screenY - 86))
             ToggleButton.Position = UDim2.new(0, nx, 0, ny)
         end
     end
@@ -726,7 +966,7 @@ ToggleButton.InputEnded:Connect(function(i)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 17. ARRASTO DO PAINEL
+-- 18. ARRASTO DO PAINEL PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local panelDrag = false
@@ -756,29 +996,29 @@ TitleBar.InputEnded:Connect(function(i)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 18. TECLA "J"
+-- 19. TECLA "J" PARA ABRIR/FECHAR
 -- ═══════════════════════════════════════════════════════════════
 
-UserInputService.InputBegan:Connect(function(i, gp)
-    if gp then return end
+UserInputService.InputBegan:Connect(function(i, gameProcessed)
+    if gameProcessed then return end
     if i.KeyCode == Enum.KeyCode.J then
         ToggleGUI()
     end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 19. ATUALIZAÇÃO DO RELÓGIO
+-- 20. ATUALIZAÇÃO DO RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 RunService.Heartbeat:Connect(function()
-    local t = GetCurrentTime()
+    local t = ClockSystem:GetCurrentDateTime()
     if t ~= DateTimeText.Text then
         DateTimeText.Text = t
     end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 20. API
+-- 21. API GLOBAL
 -- ═══════════════════════════════════════════════════════════════
 
 _G.CarFlipper = {
@@ -789,15 +1029,15 @@ _G.CarFlipper = {
     StartClaimCash = StartClaimCash,
     StopClaimCash = StopClaimCash,
     ToggleClaimCash = ToggleClaimCash,
-    IsClaimCashRunning = function() return ClaimCashEnabled end,
-    SetCashPosition = function(pos) CASH_POSITION = pos end,
-    SetInterval = function(interval) ClaimCashInterval = interval end,
+    IsClaimCashRunning = function() return ClaimCash.isRunning end,
+    SetCashPosition = function(pos) ClaimCash.cashPosition = pos end,
+    SetInterval = function(interval) ClaimCash.interval = interval end,
     GetStatus = function() return StatusLabel and StatusLabel.Text or "" end,
-    SetStatus = function(text) if StatusLabel then StatusLabel.Text = text end end,
+    SetStatus = function(text) UpdateStatus(text) end,
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 21. ANIMAÇÃO DE ENTRADA
+-- 22. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 task.wait(0.1)
@@ -811,7 +1051,7 @@ TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 22. FINAL
+-- 23. FINAL
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado!")
