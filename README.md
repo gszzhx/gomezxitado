@@ -2,7 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
     Busca automática pelo prompt/botão "Dinheiro Coletar" + Coleta automática
-    VERSÃO CORRIGIDA COM INPUT EDITÁVEL
+    VERSÃO COM ESPAÇAMENTO DINÂMICO
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -21,7 +21,6 @@ local HttpService = game:GetService("HttpService")
 -- 2. CONFIGURAÇÕES DO CLAIM CASH
 -- ═══════════════════════════════════════════════════════════════
 
--- Palavra-chave principal: o texto "Dinheiro" que aparece no topo do prompt
 local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money"}
 
 -- ═══════════════════════════════════════════════════════════════
@@ -69,13 +68,12 @@ end
 
 local ClaimCash = {
     enabled = false,
-    interval = 5, -- segundos
+    interval = 5,
     task = nil,
     isRunning = false,
     collectRadius = 10,
 }
 
--- Verifica se um texto bate com alguma palavra-chave de dinheiro
 local function MatchesMoneyKeyword(text)
     if not text then return false end
     text = text:lower()
@@ -594,15 +592,17 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. CHECKBOXES COM INPUT EDITÁVEL
+-- 14. CHECKBOXES COM INPUT EDITÁVEL E ESPAÇAMENTO DINÂMICO
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
+local allCheckboxStates = {} -- Armazena todos os estados para ajuste dinâmico
 
-local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider)
+local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider, index, sectionName)
     local container = Instance.new("Frame")
     container.Name = name .. "Container"
-    container.Size = UDim2.new(0, 165, 0, hasSlider and 70 or 30)
+    -- Altura inicial: 30px quando desativado, 70px quando ativado
+    container.Size = UDim2.new(0, 165, 0, 30)
     container.Position = UDim2.new(xPos, 0, 0, yPos)
     container.BackgroundTransparency = 1
     container.Parent = parent
@@ -655,7 +655,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
     local sliderContainer = nil
     local sliderFill = nil
     local sliderThumb = nil
-    local sliderValueText = nil
     local valueInput = nil
 
     if hasSlider then
@@ -664,7 +663,7 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         sliderContainer.Size = UDim2.new(0, 165, 0, 30)
         sliderContainer.Position = UDim2.new(0, 0, 0, 34)
         sliderContainer.BackgroundColor3 = Theme.SliderBG
-        sliderContainer.BackgroundTransparency = 0
+        sliderContainer.BackgroundTransparency = 1
         sliderContainer.BorderSizePixel = 0
         sliderContainer.Visible = false
         sliderContainer.Parent = container
@@ -709,7 +708,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         thumbCorner.CornerRadius = UDim.new(1, 0)
         thumbCorner.Parent = sliderThumb
 
-        -- INPUT EDITÁVEL para valor
         valueInput = Instance.new("TextBox")
         valueInput.Name = "ValueInput"
         valueInput.Size = UDim2.new(0.28, 0, 0.7, 0)
@@ -729,7 +727,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         inputCorner.CornerRadius = UDim.new(0, 4)
         inputCorner.Parent = valueInput
 
-        -- Label "s" para segundos
         local secondsLabel = Instance.new("TextLabel")
         secondsLabel.Name = "SecondsLabel"
         secondsLabel.Size = UDim2.new(0, 12, 0.7, 0)
@@ -755,7 +752,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             sliderFill.Size = UDim2.new(percent, 0, 1, 0)
             sliderThumb.Position = UDim2.new(percent, -7, 0.5, -7)
 
-            -- Arredonda para 1 casa decimal
             local rounded = math.floor(currentValue * 10 + 0.5) / 10
             valueInput.Text = string.format("%.1f", rounded)
 
@@ -774,7 +770,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             return percent
         end
 
-        -- Eventos do slider
         sliderBg.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or
                input.UserInputType == Enum.UserInputType.Touch then
@@ -801,7 +796,6 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             end
         end)
 
-        -- Evento do input editável
         valueInput.FocusLost:Connect(function(enterPressed)
             local text = valueInput.Text:gsub(",", ".")
             local num = tonumber(text)
@@ -826,6 +820,10 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         sliderContainer = sliderContainer,
         hasSlider = hasSlider or false,
         name = name,
+        sectionName = sectionName,
+        index = index,
+        parent = parent,
+        isClaimCash = (name == "ClaimCash"),
     }
 
     function state:Toggle()
@@ -839,9 +837,17 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 
             if state.hasSlider and sliderContainer then
                 sliderContainer.Visible = true
-                TweenService:Create(sliderContainer, TweenInfo.new(0.3), {
-                    BackgroundTransparency = 0
+                sliderContainer.BackgroundTransparency = 0
+                
+                -- Expande o container para 70px
+                TweenService:Create(state.container, TweenInfo.new(0.3), {
+                    Size = UDim2.new(0, 165, 0, 70)
                 }):Play()
+
+                -- Reorganiza os itens abaixo
+                if state.isClaimCash then
+                    ReorganizeItems()
+                end
 
                 if state.name == "ClaimCash" then
                     ToggleClaimCash()
@@ -854,11 +860,21 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             state.checkIcon.Visible = false
 
             if state.hasSlider and sliderContainer then
+                -- Recolhe o container para 30px
+                TweenService:Create(state.container, TweenInfo.new(0.3), {
+                    Size = UDim2.new(0, 165, 0, 30)
+                }):Play()
+                
                 TweenService:Create(sliderContainer, TweenInfo.new(0.3), {
                     BackgroundTransparency = 1
                 }):Play()
                 task.wait(0.3)
                 sliderContainer.Visible = false
+
+                -- Reorganiza os itens abaixo
+                if state.isClaimCash then
+                    ReorganizeItems()
+                end
 
                 if state.name == "ClaimCash" then
                     ToggleClaimCash()
@@ -875,11 +891,49 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
     end)
 
     Checkboxes[name] = state
+    table.insert(allCheckboxStates, state)
     return state
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. SEÇÕES
+-- 15. REORGANIZAÇÃO DINÂMICA DOS ITENS
+-- ═══════════════════════════════════════════════════════════════
+
+function ReorganizeItems()
+    -- Agrupa os estados por seção
+    local sections = {}
+    for _, state in ipairs(allCheckboxStates) do
+        if not sections[state.sectionName] then
+            sections[state.sectionName] = {}
+        end
+        table.insert(sections[state.sectionName], state)
+    end
+
+    -- Para cada seção, reorganiza as posições
+    for sectionName, states in pairs(sections) do
+        -- Ordena pelo index original
+        table.sort(states, function(a, b) return a.index < b.index end)
+        
+        local yCursor = 48
+        for _, state in ipairs(states) do
+            local height = 30 -- altura padrão
+            if state.checked and state.hasSlider then
+                height = 70 -- altura com slider visível
+            end
+            state.container.Position = UDim2.new(0, 0, 0, yCursor)
+            yCursor = yCursor + height + 10
+        end
+        
+        -- Atualiza o tamanho da seção
+        local sectionContainer = states[1].parent
+        if sectionContainer then
+            sectionContainer.Size = UDim2.new(0, 280, 0, yCursor + 6)
+        end
+    end
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 16. SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local SectionsData = {
@@ -971,10 +1025,22 @@ for i, sectionData in ipairs(SectionsData) do
         end
 
         local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
-        CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yCursor, hasSlider)
-
-        -- Espaçamento: 70px se tiver slider (abrindo), 30px se não
-        yCursor = yCursor + (hasSlider and 70 or 30) + 10
+        local state = CreateCheckboxWithSlider(
+            sectionContainer, 
+            name, 
+            labelText, 
+            0, 
+            yCursor, 
+            hasSlider,
+            j,
+            sectionData.title
+        )
+        
+        -- Salva o container da seção no state para reorganização
+        state.parent = sectionContainer
+        
+        -- Altura inicial: 30px (sem slider visível)
+        yCursor = yCursor + 30 + 10
     end
 
     sectionContainer.Size = UDim2.new(0, sectionWidth, 0, yCursor + 6)
@@ -983,7 +1049,7 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. TOGGLE DO PAINEL
+-- 17. TOGGLE DO PAINEL
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true
@@ -1020,7 +1086,7 @@ local function ToggleGUI()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 17. ARRASTO DO BOTÃO FLUTUANTE
+-- 18. ARRASTO DO BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local dragging = false
@@ -1064,7 +1130,7 @@ ToggleButton.InputEnded:Connect(function(i)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 18. ARRASTO DO PAINEL PRINCIPAL
+-- 19. ARRASTO DO PAINEL PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local panelDrag = false
@@ -1094,7 +1160,7 @@ TitleBar.InputEnded:Connect(function(i)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 19. TECLA "J" PARA ABRIR/FECHAR
+-- 20. TECLA "J" PARA ABRIR/FECHAR
 -- ═══════════════════════════════════════════════════════════════
 
 UserInputService.InputBegan:Connect(function(i, gameProcessed)
@@ -1105,7 +1171,7 @@ UserInputService.InputBegan:Connect(function(i, gameProcessed)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 20. ATUALIZAÇÃO DO RELÓGIO
+-- 21. ATUALIZAÇÃO DO RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 RunService.Heartbeat:Connect(function()
@@ -1116,7 +1182,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 21. API GLOBAL
+-- 22. API GLOBAL
 -- ═══════════════════════════════════════════════════════════════
 
 _G.CarFlipper = {
@@ -1132,10 +1198,11 @@ _G.CarFlipper = {
     AddMoneyKeyword = function(word) table.insert(MONEY_PROMPT_KEYWORDS, word:lower()) end,
     GetStatus = function() return StatusLabel and StatusLabel.Text or "" end,
     SetStatus = function(text) UpdateStatus(text) end,
+    Reorganize = ReorganizeItems,
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 22. ANIMAÇÃO DE ENTRADA
+-- 23. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 task.wait(0.1)
@@ -1149,7 +1216,7 @@ TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 23. FINAL
+-- 24. FINAL
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado!")
@@ -1157,3 +1224,4 @@ print("📌 Clique no botão preto para abrir/fechar")
 print("⌨️  Tecla 'J' para abrir/fechar")
 print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
 print("⏱️  Clique no número para ajustar o tempo (0.3s a 5s)")
+print("📐 Espaçamento dinâmico: o slider só aparece quando ativado!")
