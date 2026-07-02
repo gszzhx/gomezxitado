@@ -1,8 +1,8 @@
 --[[
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO
-    Interface com Layout Horizontal (Base Retangular)
-    Design Moderno com Abas e Checkboxes
+    Interface Premium com Layout Horizontal
+    Removido: Campo de busca, botão Enviar e Aba Run Once
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -14,6 +14,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
 -- ═══════════════════════════════════════════════════════════════
 -- 2. TEMA ESCURO (DARK THEME)
@@ -38,9 +39,9 @@ local Theme = {
     
     CheckboxBG = Color3.fromRGB(45, 45, 58),
     CheckboxChecked = Color3.fromRGB(255, 200, 50),
-    InputBG = Color3.fromRGB(35, 35, 45),
     
     Danger = Color3.fromRGB(220, 60, 60),
+    Gold = Color3.fromRGB(255, 200, 50),
 }
 
 -- ═══════════════════════════════════════════════════════════════
@@ -56,19 +57,17 @@ MainGui.ResetOnSpawn = false
 -- 3.2 MainFrame (Janela Principal - Horizontal)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 900, 0, 520)  -- Largura maior, altura menor (horizontal)
+MainFrame.Size = UDim2.new(0, 900, 0, 520)
 MainFrame.Position = UDim2.new(0.5, -450, 0.5, -260)
 MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = MainGui
 
--- Corner da MainFrame
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
--- Stroke da MainFrame
 local MainStroke = Instance.new("UIStroke")
 MainStroke.Color = Theme.Border
 MainStroke.Thickness = 1.5
@@ -89,7 +88,7 @@ ShadowCorner.CornerRadius = UDim.new(0, 18)
 ShadowCorner.Parent = Shadow
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. BARRA DE TÍTULO
+-- 4. BARRA DE TÍTULO COM INFORMAÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
@@ -106,7 +105,7 @@ TitleCorner.Parent = TitleBar
 -- Título
 local TitleText = Instance.new("TextLabel")
 TitleText.Name = "Title"
-TitleText.Size = UDim2.new(1, -60, 1, 0)
+TitleText.Size = UDim2.new(0.5, -18, 1, 0)
 TitleText.Position = UDim2.new(0, 18, 0, 0)
 TitleText.BackgroundTransparency = 1
 TitleText.Text = "Car Flipper - GomezXitado"
@@ -116,6 +115,34 @@ TitleText.Font = Enum.Font.GothamSemibold
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.TextYAlignment = Enum.TextYAlignment.Center
 TitleText.Parent = TitleBar
+
+-- Valor em dinheiro (canto direito)
+local MoneyText = Instance.new("TextLabel")
+MoneyText.Name = "MoneyText"
+MoneyText.Size = UDim2.new(0.3, -20, 1, 0)
+MoneyText.Position = UDim2.new(0.7, 0, 0, 0)
+MoneyText.BackgroundTransparency = 1
+MoneyText.Text = "1,662,627$"
+MoneyText.TextColor3 = Theme.Gold
+MoneyText.TextSize = 16
+MoneyText.Font = Enum.Font.GothamBold
+MoneyText.TextXAlignment = Enum.TextXAlignment.Right
+MoneyText.TextYAlignment = Enum.TextYAlignment.Center
+MoneyText.Parent = TitleBar
+
+-- Data/Hora (canto direito)
+local DateTimeText = Instance.new("TextLabel")
+DateTimeText.Name = "DateTimeText"
+DateTimeText.Size = UDim2.new(0.15, -10, 1, 0)
+DateTimeText.Position = UDim2.new(0.85, 0, 0, 0)
+DateTimeText.BackgroundTransparency = 1
+DateTimeText.Text = "22:13 01/07/2026"
+DateTimeText.TextColor3 = Theme.TextMuted
+DateTimeText.TextSize = 12
+DateTimeText.Font = Enum.Font.Gotham
+DateTimeText.TextXAlignment = Enum.TextXAlignment.Right
+DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
+DateTimeText.Parent = TitleBar
 
 -- Botão Fechar
 local CloseBtn = Instance.new("TextButton")
@@ -159,7 +186,7 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. ABAS (TABS)
+-- 5. ABA ÚNICA (AUTO) - REMOVIDO RUN ONCE
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
@@ -169,126 +196,33 @@ TabContainer.Position = UDim2.new(0, 10, 0, 54)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
-local Tabs = {}
-local ActiveTab = "Auto"
+-- Apenas a aba "Auto" (centralizada)
+local AutoTab = Instance.new("TextButton")
+AutoTab.Name = "AutoTab"
+AutoTab.Size = UDim2.new(0.2, 0, 1, -4)
+AutoTab.Position = UDim2.new(0.4, 0, 0, 2)
+AutoTab.BackgroundColor3 = Theme.Accent
+AutoTab.Text = "Auto"
+AutoTab.TextColor3 = Theme.Background
+AutoTab.TextSize = 14
+AutoTab.Font = Enum.Font.GothamMedium
+AutoTab.BorderSizePixel = 0
+AutoTab.Parent = TabContainer
 
-function CreateTab(name, label)
-    local tab = Instance.new("TextButton")
-    tab.Name = name .. "Tab"
-    tab.Size = UDim2.new(0.5, -4, 1, -4)
-    tab.Position = (name == "Auto") and UDim2.new(0, 0, 0, 2) or UDim2.new(0.5, 4, 0, 2)
-    tab.BackgroundColor3 = (name == "Auto") and Theme.Accent or Theme.Surface
-    tab.Text = label
-    tab.TextColor3 = (name == "Auto") and Theme.Background or Theme.TextSecondary
-    tab.TextSize = 14
-    tab.Font = Enum.Font.GothamMedium
-    tab.BorderSizePixel = 0
-    tab.Parent = TabContainer
-    
-    local tabCorner = Instance.new("UICorner")
-    tabCorner.CornerRadius = UDim.new(0, 8)
-    tabCorner.Parent = tab
-    
-    tab.MouseButton1Click:Connect(function()
-        ActiveTab = name
-        for tabName, tabBtn in pairs(Tabs) do
-            local isActive = (tabName == name)
-            TweenService:Create(tabBtn, TweenInfo.new(0.2), {
-                BackgroundColor3 = isActive and Theme.Accent or Theme.Surface,
-                TextColor3 = isActive and Theme.Background or Theme.TextSecondary
-            }):Play()
-        end
-    end)
-    
-    Tabs[name] = tab
-    return tab
-end
-
-CreateTab("Auto", "Auto")
-CreateTab("RunOnce", "Run Once")
+local AutoTabCorner = Instance.new("UICorner")
+AutoTabCorner.CornerRadius = UDim.new(0, 8)
+AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. CAMPO DE BUSCA (TEXTBOX)
--- ═══════════════════════════════════════════════════════════════
-
-local SearchContainer = Instance.new("Frame")
-SearchContainer.Name = "SearchContainer"
-SearchContainer.Size = UDim2.new(1, -20, 0, 38)
-SearchContainer.Position = UDim2.new(0, 10, 0, 102)
-SearchContainer.BackgroundTransparency = 1
-SearchContainer.Parent = MainFrame
-
--- Input
-local SearchInput = Instance.new("TextBox")
-SearchInput.Name = "SearchInput"
-SearchInput.Size = UDim2.new(0.78, -6, 1, 0)
-SearchInput.Position = UDim2.new(0, 0, 0, 0)
-SearchInput.BackgroundColor3 = Theme.InputBG
-SearchInput.BorderSizePixel = 0
-SearchInput.Text = ""
-SearchInput.PlaceholderText = "Digite algo..."
-SearchInput.PlaceholderColor3 = Theme.TextMuted
-SearchInput.TextColor3 = Theme.TextPrimary
-SearchInput.TextSize = 13
-SearchInput.Font = Enum.Font.Gotham
-SearchInput.ClearTextOnFocus = false
-SearchInput.Parent = SearchContainer
-
-local SearchCorner = Instance.new("UICorner")
-SearchCorner.CornerRadius = UDim.new(0, 8)
-SearchCorner.Parent = SearchInput
-
-local SearchStroke = Instance.new("UIStroke")
-SearchStroke.Color = Theme.Border
-SearchStroke.Thickness = 1
-SearchStroke.Parent = SearchInput
-
--- Botão Enviar
-local SendBtn = Instance.new("TextButton")
-SendBtn.Name = "SendBtn"
-SendBtn.Size = UDim2.new(0.22, -6, 1, 0)
-SendBtn.Position = UDim2.new(0.78, 10, 0, 0)
-SendBtn.BackgroundColor3 = Theme.Accent
-SendBtn.Text = "Enviar"
-SendBtn.TextColor3 = Theme.Background
-SendBtn.TextSize = 13
-SendBtn.Font = Enum.Font.GothamMedium
-SendBtn.BorderSizePixel = 0
-SendBtn.Parent = SearchContainer
-
-local SendCorner = Instance.new("UICorner")
-SendCorner.CornerRadius = UDim.new(0, 8)
-SendCorner.Parent = SendBtn
-
-SendBtn.MouseEnter:Connect(function()
-    TweenService:Create(SendBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Theme.AccentHover
-    }):Play()
-end)
-
-SendBtn.MouseLeave:Connect(function()
-    TweenService:Create(SendBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Theme.Accent
-    }):Play()
-end)
-
-SendBtn.MouseButton1Click:Connect(function()
-    if SearchInput.Text ~= "" then
-        print("[Car Flipper] Busca:", SearchInput.Text)
-        SearchInput.Text = ""
-    end
-end)
-
--- ═══════════════════════════════════════════════════════════════
--- 7. STATUS
+-- 6. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
-StatusLabel.Position = UDim2.new(0, 12, 0, 148)
+StatusLabel.Position = UDim2.new(0, 12, 0, 104)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "⏳ [Car Flipper] Idle"
+StatusLabel.Text = "[Car Flipper] Idle"
 StatusLabel.TextColor3 = Theme.TextSecondary
 StatusLabel.TextSize = 13
 StatusLabel.Font = Enum.Font.GothamMedium
@@ -297,19 +231,17 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. CONTAINER DE CONTEÚDO (HORIZONTAL - LAYOUT EM GRID)
+-- 7. CONTAINER DE CONTEÚDO (LAYOUT HORIZONTAL)
 -- ═══════════════════════════════════════════════════════════════
 
--- Container principal para as seções (layout horizontal)
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -20, 1, -190)
-ContentContainer.Position = UDim2.new(0, 10, 0, 180)
+ContentContainer.Size = UDim2.new(1, -20, 1, -150)
+ContentContainer.Position = UDim2.new(0, 10, 0, 136)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.ClipsDescendants = true
 ContentContainer.Parent = MainFrame
 
--- Canvas para scroll (se necessário)
 local Canvas = Instance.new("Frame")
 Canvas.Name = "Canvas"
 Canvas.Size = UDim2.new(1, 0, 0, 0)
@@ -317,7 +249,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. SISTEMA DE CHECKBOX PERSONALIZADO
+-- 8. SISTEMA DE CHECKBOX PERSONALIZADO
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -325,7 +257,7 @@ local Checkboxes = {}
 function CreateCheckbox(parent, name, label, xPos, yPos)
     local container = Instance.new("Frame")
     container.Name = name
-    container.Size = UDim2.new(0, 160, 0, 28)  -- Largura fixa para horizontal
+    container.Size = UDim2.new(0, 160, 0, 28)
     container.Position = UDim2.new(xPos, 0, 0, yPos)
     container.BackgroundTransparency = 1
     container.Parent = parent
@@ -400,14 +332,12 @@ function CreateCheckbox(parent, name, label, xPos, yPos)
         end
     end
     
-    -- Eventos de clique
     container.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             state:Toggle()
         end
     end)
     
-    -- Hover
     container.MouseEnter:Connect(function()
         TweenService:Create(label, TweenInfo.new(0.15), {
             TextColor3 = Theme.Accent
@@ -427,92 +357,13 @@ function CreateCheckbox(parent, name, label, xPos, yPos)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. FUNÇÃO PARA CRIAR SEÇÕES (HORIZONTAL)
+-- 9. CONSTRUÇÃO DAS SEÇÕES (HORIZONTAL)
 -- ═══════════════════════════════════════════════════════════════
 
-local sectionY = 0
-local sectionSpacing = 20
-
-function CreateSection(title, items)
-    -- Container da seção (retângulo horizontal)
-    local sectionContainer = Instance.new("Frame")
-    sectionContainer.Name = title:gsub("─", ""):gsub(" ", "") .. "Section"
-    sectionContainer.Size = UDim2.new(0, 280, 0, 0)
-    sectionContainer.Position = UDim2.new(0, 0, 0, sectionY)
-    sectionContainer.BackgroundColor3 = Theme.Surface
-    sectionContainer.BackgroundTransparency = 0
-    sectionContainer.BorderSizePixel = 0
-    sectionContainer.Parent = Canvas
-    
-    local sectionCorner = Instance.new("UICorner")
-    sectionCorner.CornerRadius = UDim.new(0, 10)
-    sectionCorner.Parent = sectionContainer
-    
-    local sectionStroke = Instance.new("UIStroke")
-    sectionStroke.Color = Theme.Border
-    sectionStroke.Thickness = 1
-    sectionStroke.Parent = sectionContainer
-    
-    -- Título da seção
-    local sectionTitle = Instance.new("TextLabel")
-    sectionTitle.Name = "Title"
-    sectionTitle.Size = UDim2.new(1, -16, 0, 32)
-    sectionTitle.Position = UDim2.new(0, 8, 0, 4)
-    sectionTitle.BackgroundTransparency = 1
-    sectionTitle.Text = title
-    sectionTitle.TextColor3 = Theme.TextMuted
-    sectionTitle.TextSize = 12
-    sectionTitle.Font = Enum.Font.GothamBold
-    sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
-    sectionTitle.TextYAlignment = Enum.TextYAlignment.Center
-    sectionTitle.Parent = sectionContainer
-    
-    -- Divider
-    local divider = Instance.new("Frame")
-    divider.Name = "Divider"
-    divider.Size = UDim2.new(0.9, 0, 0, 1)
-    divider.Position = UDim2.new(0.05, 0, 0, 40)
-    divider.BackgroundColor3 = Theme.Divider
-    divider.BorderSizePixel = 0
-    divider.Parent = sectionContainer
-    
-    -- Criar checkboxes em grid horizontal
-    local startX = 8
-    local startY = 48
-    local itemsPerRow = 1
-    local currentX = startX
-    local currentY = startY
-    local maxWidth = 0
-    
-    for i, item in ipairs(items) do
-        -- Calcular posição (vertical em colunas)
-        local col = math.floor((i - 1) / 4)  -- 4 itens por coluna
-        local row = (i - 1) % 4
-        
-        local xPos = currentX + (col * 130)
-        local yPos = currentY + (row * 30)
-        
-        CreateCheckbox(sectionContainer, item.name, item.label, 0, yPos)
-        maxWidth = math.max(maxWidth, xPos + 160)
-    end
-    
-    -- Ajustar tamanho do container baseado no conteúdo
-    local totalHeight = startY + (math.min(#items, 4) * 30) + 16
-    sectionContainer.Size = UDim2.new(0, math.max(maxWidth + 16, 160), 0, totalHeight)
-    
-    -- Atualizar Y para próxima seção
-    sectionY = sectionY + totalHeight + sectionSpacing
-    
-    return sectionContainer
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 11. DEFINIÇÃO DOS DADOS DAS SEÇÕES
--- ═══════════════════════════════════════════════════════════════
-
+-- Dados das seções
 local SectionsData = {
     {
-        title = "──────── Base ────────",
+        title = "Base",
         items = {
             {name = "ClaimCash", label = "Claim Cash"},
             {name = "ClaimParts", label = "Claim Parts"},
@@ -524,7 +375,7 @@ local SectionsData = {
         }
     },
     {
-        title = "──────── Cars ────────",
+        title = "Cars",
         items = {
             {name = "FixCars", label = "Fix Cars"},
             {name = "SellFixedCars", label = "Sell Fixed Cars"},
@@ -533,7 +384,7 @@ local SectionsData = {
         }
     },
     {
-        title = "──────── Rewards ────────",
+        title = "Rewards",
         items = {
             {name = "ClaimPlaytimeRewards", label = "Claim Playtime Rewards"},
             {name = "ClaimDailyRewards", label = "Claim Daily Rewards"},
@@ -541,27 +392,17 @@ local SectionsData = {
     }
 }
 
--- ═══════════════════════════════════════════════════════════════
--- 12. CONSTRUÇÃO DAS SEÇÕES (LAYOUT HORIZONTAL)
--- ═══════════════════════════════════════════════════════════════
-
--- Posicionar as seções horizontalmente (uma ao lado da outra)
-local totalSections = #SectionsData
-local sectionWidth = 280  -- Largura de cada seção
+-- Criar seções horizontalmente
+local sectionWidth = 280
 local spacing = 20
-local totalWidth = (totalSections * sectionWidth) + ((totalSections - 1) * spacing)
+local startX = 0
 
--- Ajustar Canvas para acomodar todas as seções horizontalmente
-local canvasWidth = math.max(totalWidth, 860)  -- Mínimo 860px
-Canvas.Size = UDim2.new(0, canvasWidth, 0, 340)
-
--- Criar cada seção com posição horizontal
 for i, sectionData in ipairs(SectionsData) do
-    local xPos = (i - 1) * (sectionWidth + spacing)
+    local xPos = startX + ((i - 1) * (sectionWidth + spacing))
     
     -- Container da seção
     local sectionContainer = Instance.new("Frame")
-    sectionContainer.Name = sectionData.title:gsub("─", ""):gsub(" ", "") .. "Section"
+    sectionContainer.Name = sectionData.title .. "Section"
     sectionContainer.Size = UDim2.new(0, sectionWidth, 0, 0)
     sectionContainer.Position = UDim2.new(0, xPos, 0, 0)
     sectionContainer.BackgroundColor3 = Theme.Surface
@@ -601,24 +442,20 @@ for i, sectionData in ipairs(SectionsData) do
     divider.BorderSizePixel = 0
     divider.Parent = sectionContainer
     
-    -- Criar checkboxes em layout vertical
+    -- Criar checkboxes
     local startY = 48
-    local itemsPerColumn = 6  -- Máximo de itens por coluna
-    
-    for i, item in ipairs(sectionData.items) do
-        local row = i - 1
-        local yPos = startY + (row * 30)
-        
+    for j, item in ipairs(sectionData.items) do
+        local yPos = startY + ((j - 1) * 30)
         CreateCheckbox(sectionContainer, item.name, item.label, 0, yPos)
     end
     
-    -- Ajustar altura do container
+    -- Ajustar altura
     local totalHeight = startY + (#sectionData.items * 30) + 16
     sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. SISTEMA DE ARRASTAR
+-- 10. SISTEMA DE ARRASTAR
 -- ═══════════════════════════════════════════════════════════════
 
 local Dragging = false
@@ -658,7 +495,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. ANIMAÇÃO DE ENTRADA
+-- 11. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 MainFrame.Size = UDim2.new(0, 900, 0, 0)
@@ -672,7 +509,7 @@ TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. API PÚBLICA
+-- 12. API PÚBLICA
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
@@ -680,10 +517,17 @@ local CarFlipperAPI = {
         return StatusLabel.Text
     end,
     SetStatus = function(text)
-        StatusLabel.Text = "⏳ " .. text
+        StatusLabel.Text = text
     end,
     SetIdle = function()
-        StatusLabel.Text = "⏳ [Car Flipper] Idle"
+        StatusLabel.Text = "[Car Flipper] Idle"
+    end,
+    
+    GetMoney = function()
+        return MoneyText.Text
+    end,
+    SetMoney = function(value)
+        MoneyText.Text = tostring(value) .. "$"
     end,
     
     GetCheckbox = function(name)
@@ -703,25 +547,6 @@ local CarFlipperAPI = {
             states[name] = cb.checked
         end
         return states
-    end,
-    
-    GetSearchText = function()
-        return SearchInput.Text
-    end,
-    SetSearchText = function(text)
-        SearchInput.Text = text
-    end,
-    ClearSearch = function()
-        SearchInput.Text = ""
-    end,
-    
-    GetActiveTab = function()
-        return ActiveTab
-    end,
-    SetActiveTab = function(tab)
-        if Tabs[tab] then
-            Tabs[tab].MouseButton1Click:Fire()
-        end
     end,
     
     Show = function()
@@ -754,9 +579,9 @@ local CarFlipperAPI = {
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. FINALIZAÇÃO
+-- 13. FINALIZAÇÃO
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado com sucesso!")
-print("📐 Layout Horizontal - Retangular")
+print("📐 Layout Horizontal - Removido: Busca, Enviar e Run Once")
 print("📌 Use _G.CarFlipper para controlar a interface")
