@@ -1,7 +1,8 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
-    Teleporte automático para área de coleta + Coleta automática
+    CAR FLIPPER - GOMEZXITADO - VERSÃO CORRIGIDA
+    Sistema Claim Cash + Teleporte + Coleta Automática
+    TODAS AS FUNÇÕES IMPLEMENTADAS
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -20,8 +21,8 @@ local HttpService = game:GetService("HttpService")
 -- 2. CONFIGURAÇÕES DO CLAIM CASH
 -- ═══════════════════════════════════════════════════════════════
 
--- POSIÇÃO DE COLETA - AJUSTE CONFORME NECESSÁRIO
-local CASH_COLLECT_POSITION = Vector3.new(0, 5, 0) -- <-- MUDE AQUI para a posição correta
+-- POSIÇÃO DE COLETA - AJUSTE CONFORME O JOGO
+local CASH_COLLECT_POSITION = Vector3.new(0, 5, 0) -- MUDE PARA A POSIÇÃO CORRETA
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. TEMA
@@ -55,279 +56,15 @@ local Theme = {
 
 local ClaimCash = {
     enabled = false,
-    interval = 5, -- segundos
+    interval = 5,
     task = nil,
     isRunning = false,
     cashPosition = CASH_COLLECT_POSITION,
-    collectRadius = 10, -- Raio para detectar dinheiro
+    collectRadius = 15,
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. FUNÇÕES DE COLETA DE DINHEIRO
--- ═══════════════════════════════════════════════════════════════
-
--- Função para encontrar e coletar dinheiro
-local function FindAndCollectCash()
-    local character = LocalPlayer.Character
-    if not character then return false end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
-    
-    local collected = false
-    local cashObjects = {}
-    
-    -- Procurar por objetos de dinheiro no workspace
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        -- Verifica se é um objeto de dinheiro
-        local isCash = false
-        local objName = obj.Name:lower()
-        
-        -- Nomes comuns de objetos de dinheiro
-        if objName:find("cash") or 
-           objName:find("money") or 
-           objName:find("coin") or 
-           objName:find("dollar") or
-           objName:find("dinheiro") or
-           objName:find("golds") or
-           objName:find("moeda") then
-            isCash = true
-        end
-        
-        -- Verifica se é uma parte ou modelo e está próximo
-        if isCash and (obj:IsA("Part") or obj:IsA("Model") or obj:IsA("BasePart")) then
-            local position = obj:IsA("Model") and obj.PrimaryPart and obj.PrimaryPart.Position or 
-                            obj:IsA("BasePart") and obj.Position or nil
-            
-            if position then
-                local distance = (position - humanoidRootPart.Position).Magnitude
-                if distance < ClaimCash.collectRadius then
-                    table.insert(cashObjects, obj)
-                end
-            end
-        end
-    end
-    
-    -- Se encontrou objetos de dinheiro, coletar
-    if #cashObjects > 0 then
-        for _, obj in ipairs(cashObjects) do
-            if obj and obj.Parent then
-                -- Tenta coletar o dinheiro
-                local success = pcall(function()
-                    -- Método 1: Click Detector
-                    local clickDetector = obj:FindFirstChild("ClickDetector")
-                    if clickDetector then
-                        clickDetector:Click()
-                        collected = true
-                        print("💰 Coletou dinheiro via ClickDetector: " .. obj.Name)
-                        return
-                    end
-                    
-                    -- Método 2: Proximity Prompt
-                    local proximityPrompt = obj:FindFirstChild("ProximityPrompt")
-                    if proximityPrompt then
-                        proximityPrompt:InputHold()
-                        task.wait(0.1)
-                        proximityPrompt:InputRelease()
-                        collected = true
-                        print("💰 Coletou dinheiro via ProximityPrompt: " .. obj.Name)
-                        return
-                    end
-                    
-                    -- Método 3: Tool
-                    local tool = obj:FindFirstChild("Tool")
-                    if tool then
-                        local backpack = LocalPlayer:FindFirstChild("Backpack")
-                        if backpack then
-                            tool.Parent = backpack
-                            collected = true
-                            print("💰 Coletou dinheiro via Tool: " .. obj.Name)
-                            return
-                        end
-                    end
-                    
-                    -- Método 4: Touched
-                    local touched = obj:FindFirstChild("Touched")
-                    if touched then
-                        firetouchinterest(humanoidRootPart, obj, 0)
-                        task.wait(0.1)
-                        firetouchinterest(humanoidRootPart, obj, 1)
-                        collected = true
-                        print("💰 Coletou dinheiro via Touch: " .. obj.Name)
-                        return
-                    end
-                    
-                    -- Método 5: Remover objeto (simular coleta)
-                    if obj:IsA("BasePart") or obj:IsA("Model") then
-                        obj:Destroy()
-                        collected = true
-                        print("💰 Coletou dinheiro (destruído): " .. obj.Name)
-                        return
-                    end
-                end)
-                
-                if success and collected then
-                    break
-                end
-            end
-        end
-    end
-    
-    -- Se não encontrou objetos, tenta coletar via interface
-    if not collected then
-        -- Tentar encontrar e clicar em botões de coleta na interface
-        local guis = LocalPlayer:FindFirstChild("PlayerGui")
-        if guis then
-            for _, gui in ipairs(guis:GetChildren()) do
-                if gui:IsA("ScreenGui") then
-                    for _, btn in ipairs(gui:GetDescendants()) do
-                        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-                            local btnText = btn.Text or ""
-                            if btnText:lower():find("collect") or 
-                               btnText:lower():find("coletar") or 
-                               btnText:lower():find("cash") or
-                               btnText:lower():find("dinheiro") or
-                               btnText:lower():find("reivindicar") or
-                               btnText:lower():find("claim") then
-                                
-                                pcall(function()
-                                    btn:Click()
-                                    collected = true
-                                    print("💰 Coletou dinheiro via botão: " .. btnText)
-                                    break
-                                end)
-                            end
-                        end
-                    end
-                end
-                if collected then break end
-            end
-        end
-    end
-    
-    return collected
-end
-
--- Teleportar para posição de coleta
-local function TeleportToCash()
-    if not ClaimCash.enabled then return false end
-    
-    local character = LocalPlayer.Character
-    if not character then return false end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
-    
-    UpdateStatus("[Car Flipper] Teleportando para Cash...")
-    
-    -- Teleportar
-    humanoidRootPart.CFrame = CFrame.new(ClaimCash.cashPosition)
-    task.wait(0.5)
-    
-    return true
-end
-
--- Coletar dinheiro
-local function CollectCash()
-    if not ClaimCash.enabled then return false end
-    
-    UpdateStatus("[Car Flipper] Coletando dinheiro...")
-    
-    -- Tentar coletar
-    local collected = FindAndCollectCash()
-    
-    if collected then
-        UpdateStatus("[Car Flipper] Dinheiro coletado!")
-        return true
-    else
-        UpdateStatus("[Car Flipper] Nenhum dinheiro encontrado...")
-        return false
-    end
-end
-
--- Loop principal do Claim Cash
-local function ClaimCashLoop()
-    while ClaimCash.enabled and ClaimCash.isRunning do
-        -- Teleportar
-        local teleportSuccess = TeleportToCash()
-        if not teleportSuccess then
-            UpdateStatus("[Car Flipper] Erro ao teleportar, tentando novamente...")
-            task.wait(1)
-        end
-        
-        -- Coletar (tenta várias vezes)
-        local collectSuccess = false
-        for attempt = 1, 3 do
-            collectSuccess = CollectCash()
-            if collectSuccess then break end
-            task.wait(0.5)
-        end
-        
-        if not collectSuccess then
-            UpdateStatus("[Car Flipper] Nenhum dinheiro disponível...")
-        end
-        
-        -- Aguardar intervalo
-        local waitTime = ClaimCash.interval
-        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
-        
-        -- Esperar com checagem de cancelamento
-        local startTime = tick()
-        while ClaimCash.enabled and ClaimCash.isRunning and (tick() - startTime) < waitTime do
-            task.wait(0.1)
-        end
-    end
-    
-    ClaimCash.isRunning = false
-    if not ClaimCash.enabled then
-        UpdateStatus("[Car Flipper] Claim Cash parado")
-    end
-end
-
--- Iniciar Claim Cash
-local function StartClaimCash()
-    if ClaimCash.isRunning then return end
-    if not ClaimCash.enabled then return end
-    
-    ClaimCash.isRunning = true
-    UpdateStatus("[Car Flipper] Claim Cash iniciado")
-    
-    ClaimCash.task = task.spawn(ClaimCashLoop)
-end
-
--- Parar Claim Cash
-local function StopClaimCash()
-    ClaimCash.enabled = false
-    ClaimCash.isRunning = false
-    
-    if ClaimCash.task then
-        task.cancel(ClaimCash.task)
-        ClaimCash.task = nil
-    end
-    
-    UpdateStatus("[Car Flipper] Claim Cash parado")
-end
-
--- Alternar Claim Cash
-local function ToggleClaimCash()
-    ClaimCash.enabled = not ClaimCash.enabled
-    
-    if ClaimCash.enabled then
-        StartClaimCash()
-    else
-        StopClaimCash()
-    end
-end
-
--- Atualizar status
-local function UpdateStatus(text)
-    if StatusLabel then
-        StatusLabel.Text = text
-    end
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 6. RELÓGIO
+-- 5. RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 local ClockSystem = {
@@ -364,6 +101,300 @@ function ClockSystem:GetCurrentDateTime()
             dateTable.day, dateTable.month, dateTable.year)
     end
     return result
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 6. FUNÇÕES DO CLAIM CASH (TODAS IMPLEMENTADAS)
+-- ═══════════════════════════════════════════════════════════════
+
+-- Variável para o StatusLabel (será definida depois)
+local StatusLabel = nil
+
+-- Função para atualizar o status
+local function UpdateStatus(text)
+    if StatusLabel then
+        StatusLabel.Text = text
+    end
+    print(text) -- Debug
+end
+
+-- FUNÇÃO 1: Teleportar para o dinheiro
+local function TeleportToCash()
+    if not ClaimCash.enabled then 
+        return false 
+    end
+    
+    local character = LocalPlayer.Character
+    if not character then 
+        UpdateStatus("[Car Flipper] Personagem não encontrado")
+        return false 
+    end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then 
+        UpdateStatus("[Car Flipper] RootPart não encontrado")
+        return false 
+    end
+    
+    UpdateStatus("[Car Flipper] Teleportando para Cash...")
+    
+    -- Teleportar
+    local success = pcall(function()
+        humanoidRootPart.CFrame = CFrame.new(ClaimCash.cashPosition)
+    end)
+    
+    if success then
+        task.wait(0.5)
+        return true
+    else
+        UpdateStatus("[Car Flipper] Falha ao teleportar")
+        return false
+    end
+end
+
+-- FUNÇÃO 2: Coletar dinheiro
+local function CollectCash()
+    if not ClaimCash.enabled then 
+        return false 
+    end
+    
+    UpdateStatus("[Car Flipper] Coletando dinheiro...")
+    
+    local character = LocalPlayer.Character
+    if not character then return false end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+    
+    local collected = false
+    local cashObjects = {}
+    
+    -- Procurar objetos de dinheiro
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            local objName = obj.Name:lower()
+            
+            -- Palavras-chave para identificar dinheiro
+            local isCash = objName:find("cash") or 
+                          objName:find("money") or 
+                          objName:find("coin") or 
+                          objName:find("dollar") or
+                          objName:find("dinheiro") or
+                          objName:find("moeda") or
+                          objName:find("gold")
+            
+            if isCash then
+                local position = nil
+                if obj:IsA("Model") and obj.PrimaryPart then
+                    position = obj.PrimaryPart.Position
+                elseif obj:IsA("BasePart") then
+                    position = obj.Position
+                end
+                
+                if position then
+                    local distance = (position - humanoidRootPart.Position).Magnitude
+                    if distance < ClaimCash.collectRadius then
+                        table.insert(cashObjects, obj)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Coletar objetos encontrados
+    if #cashObjects > 0 then
+        for _, obj in ipairs(cashObjects) do
+            if obj and obj.Parent then
+                local success = pcall(function()
+                    -- Método 1: ClickDetector
+                    local clickDetector = obj:FindFirstChild("ClickDetector")
+                    if clickDetector then
+                        clickDetector:Click()
+                        collected = true
+                        print("💰 Coletou via ClickDetector: " .. obj.Name)
+                        return
+                    end
+                    
+                    -- Método 2: ProximityPrompt
+                    local prompt = obj:FindFirstChild("ProximityPrompt")
+                    if prompt then
+                        prompt:InputHold()
+                        task.wait(0.1)
+                        prompt:InputRelease()
+                        collected = true
+                        print("💰 Coletou via ProximityPrompt: " .. obj.Name)
+                        return
+                    end
+                    
+                    -- Método 3: FireTouchInterest
+                    if obj:IsA("BasePart") then
+                        firetouchinterest(humanoidRootPart, obj, 0)
+                        task.wait(0.1)
+                        firetouchinterest(humanoidRootPart, obj, 1)
+                        collected = true
+                        print("💰 Coletou via Touch: " .. obj.Name)
+                        return
+                    end
+                    
+                    -- Método 4: Destruir objeto
+                    if obj:IsA("BasePart") or obj:IsA("Model") then
+                        obj:Destroy()
+                        collected = true
+                        print("💰 Coletou (destruiu): " .. obj.Name)
+                        return
+                    end
+                end)
+                
+                if success and collected then
+                    break
+                end
+            end
+        end
+    end
+    
+    -- Se não encontrou objetos, tentar via interface
+    if not collected then
+        local guis = LocalPlayer:FindFirstChild("PlayerGui")
+        if guis then
+            for _, gui in ipairs(guis:GetChildren()) do
+                if gui:IsA("ScreenGui") then
+                    for _, btn in ipairs(gui:GetDescendants()) do
+                        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                            local btnText = btn.Text or ""
+                            local lowerText = btnText:lower()
+                            
+                            if lowerText:find("collect") or 
+                               lowerText:find("coletar") or 
+                               lowerText:find("cash") or
+                               lowerText:find("dinheiro") or
+                               lowerText:find("reivindicar") or
+                               lowerText:find("claim") or
+                               lowerText:find("pegar") or
+                               lowerText:find("receber") then
+                                
+                                pcall(function()
+                                    btn:Click()
+                                    collected = true
+                                    print("💰 Coletou via botão: " .. btnText)
+                                    break
+                                end)
+                            end
+                        end
+                    end
+                end
+                if collected then break end
+            end
+        end
+    end
+    
+    -- Se ainda não coletou, tentar RemoteEvent
+    if not collected then
+        local remoteEvents = {}
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and obj.Name:lower():find("cash") then
+                table.insert(remoteEvents, obj)
+            end
+        end
+        
+        for _, remote in ipairs(remoteEvents) do
+            pcall(function()
+                remote:FireServer()
+                collected = true
+                print("💰 Coletou via RemoteEvent: " .. remote.Name)
+                break
+            end)
+        end
+    end
+    
+    if collected then
+        UpdateStatus("[Car Flipper] Dinheiro coletado!")
+    else
+        UpdateStatus("[Car Flipper] Nenhum dinheiro encontrado...")
+    end
+    
+    return collected
+end
+
+-- FUNÇÃO 3: Loop principal
+local function ClaimCashLoop()
+    while ClaimCash.enabled and ClaimCash.isRunning do
+        -- Teleportar
+        local teleportSuccess = TeleportToCash()
+        if not teleportSuccess then
+            UpdateStatus("[Car Flipper] Erro ao teleportar, tentando novamente...")
+            task.wait(2)
+        end
+        
+        -- Coletar (tenta 3 vezes)
+        local collectSuccess = false
+        for attempt = 1, 3 do
+            if not ClaimCash.enabled then break end
+            collectSuccess = CollectCash()
+            if collectSuccess then break end
+            task.wait(0.5)
+        end
+        
+        if not collectSuccess then
+            UpdateStatus("[Car Flipper] Nenhum dinheiro disponível...")
+        end
+        
+        -- Aguardar intervalo
+        local waitTime = ClaimCash.interval
+        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
+        
+        local startTime = tick()
+        while ClaimCash.enabled and ClaimCash.isRunning and (tick() - startTime) < waitTime do
+            task.wait(0.1)
+        end
+    end
+    
+    ClaimCash.isRunning = false
+    if not ClaimCash.enabled then
+        UpdateStatus("[Car Flipper] Claim Cash parado")
+    end
+end
+
+-- FUNÇÃO 4: Iniciar Claim Cash
+local function StartClaimCash()
+    if ClaimCash.isRunning then 
+        print("⚠️ Claim Cash já está rodando")
+        return 
+    end
+    if not ClaimCash.enabled then 
+        print("⚠️ Claim Cash está desabilitado")
+        return 
+    end
+    
+    ClaimCash.isRunning = true
+    UpdateStatus("[Car Flipper] Claim Cash iniciado")
+    
+    ClaimCash.task = task.spawn(ClaimCashLoop)
+    print("✅ Claim Cash iniciado com sucesso!")
+end
+
+-- FUNÇÃO 5: Parar Claim Cash
+local function StopClaimCash()
+    ClaimCash.enabled = false
+    ClaimCash.isRunning = false
+    
+    if ClaimCash.task then
+        task.cancel(ClaimCash.task)
+        ClaimCash.task = nil
+    end
+    
+    UpdateStatus("[Car Flipper] Claim Cash parado")
+    print("🛑 Claim Cash parado")
+end
+
+-- FUNÇÃO 6: Alternar Claim Cash
+local function ToggleClaimCash()
+    ClaimCash.enabled = not ClaimCash.enabled
+    
+    if ClaimCash.enabled then
+        StartClaimCash()
+    else
+        StopClaimCash()
+    end
 end
 
 -- ═══════════════════════════════════════════════════════════════
@@ -490,10 +521,10 @@ AutoTabCorner.CornerRadius = UDim.new(0, 8)
 AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. STATUS
+-- 11. STATUS (DEFININDO A VARIÁVEL GLOBAL)
 -- ═══════════════════════════════════════════════════════════════
 
-local StatusLabel = Instance.new("TextLabel")
+StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
 StatusLabel.Position = UDim2.new(0, 12, 0, 104)
@@ -857,19 +888,4 @@ for i, sectionData in ipairs(SectionsData) do
     divider.BorderSizePixel = 0
     divider.Parent = sectionContainer
     
-    local startY = 48
-    for j, item in ipairs(sectionData.items) do
-        local yPos = startY + ((j - 1) * 32)
-        local hasSlider = false
-        local labelText = item
-        
-        if type(item) == "table" then
-            labelText = item.name
-            hasSlider = item.hasSlider or false
-        end
-        
-        local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
-        CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yPos, hasSlider)
-    end
-    
-    local total
+    local start
