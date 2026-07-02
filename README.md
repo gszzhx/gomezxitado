@@ -1,616 +1,648 @@
 --[[
-    Car Flipper - Gomezxitado
-    Interface exatamente igual à imagem de referência
-]]
+    ═══════════════════════════════════════════════════════════════
+    Car Flipper - GomezXitado
+    Interface Profissional com Tema Escuro
+    Versão: 1.0.0
+    ═══════════════════════════════════════════════════════════════
+    
+    ESTRUTURA:
+    • ScreenGui (Principal)
+    │   ├── MainFrame (Janela Principal)
+    │   │   ├── TitleBar (Barra de Título)
+    │   │   │   ├── Title (Texto do Título)
+    │   │   │   └── CloseButton (Botão Fechar)
+    │   │   ├── TabContainer (Container de Abas)
+    │   │   │   ├── AutoTab (Aba Auto)
+    │   │   │   └── RunOnceTab (Aba Run Once)
+    │   │   ├── SearchBox (Campo de Pesquisa)
+    │   │   │   ├── TextBox (Entrada de Texto)
+    │   │   │   └── SendButton (Botão Enviar)
+    │   │   ├── StatusLabel (Label de Status)
+    │   │   ├── SectionDivider (Divisor de Seção)
+    │   │   ├── BaseSection (Seção Base)
+    │   │   │   ├── ClaimCash (Checkbox)
+    │   │   │   ├── ClaimParts (Checkbox)
+    │   │   │   ├── BuyUpgrades (Checkbox)
+    │   │   │   ├── ClaimContainers (Checkbox)
+    │   │   │   ├── OpenContainers (Checkbox)
+    │   │   │   ├── ClaimQuests (Checkbox)
+    │   │   │   └── DeliverJunk (Checkbox)
+    │   │   ├── CarsSection (Seção Cars)
+    │   │   │   ├── FixCars (Checkbox)
+    │   │   │   ├── SellFixedCars (Checkbox)
+    │   │   │   ├── UpdateStands (Checkbox)
+    │   │   │   └── BuyFixSellCheapest (Checkbox)
+    │   │   └── RewardsSection (Seção Rewards)
+    │   │       ├── ClaimPlaytimeRewards (Checkbox)
+    │   │       └── ClaimDailyRewards (Checkbox)
+    └── (UI Components: UICorner, UIStroke, UIPadding)
+    
+    ═══════════════════════════════════════════════════════════════
+--]]
 
--- ============================================
--- SERVIÇOS
--- ============================================
+-- ═══════════════════════════════════════════════════════════════
+-- 1. CONFIGURAÇÕES E CONSTANTES
+-- ═══════════════════════════════════════════════════════════════
+
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
--- ============================================
--- CONFIGURAÇÕES
--- ============================================
-local Config = {
-    Theme = {
-        Background = Color3.fromHex("0A0A0A"),
-        BackgroundSecondary = Color3.fromHex("0F0F0F"),
-        BackgroundTertiary = Color3.fromHex("141414"),
-        Primary = Color3.fromHex("00FF88"),
-        PrimaryDark = Color3.fromHex("00CC66"),
-        Text = Color3.fromHex("FFFFFF"),
-        TextSecondary = Color3.fromHex("88FFBB"),
-        TextMuted = Color3.fromHex("445544"),
-        Border = Color3.fromHex("1A2A1A"),
-        Success = Color3.fromHex("00FF88"),
-        Danger = Color3.fromHex("FF3366"),
-        Warning = Color3.fromHex("FFAA00"),
-    },
-    Font = Enum.Font.Gotham,
-    FontBold = Enum.Font.GothamBold,
-    BlurEnabled = true,
-    WindowTitle = "Car Flipper - Gomezxitado",
+-- Cores do Tema (Dark Theme)
+local COLORS = {
+    Background = Color3.fromRGB(20, 20, 25),
+    Frame = Color3.fromRGB(30, 30, 38),
+    TitleBar = Color3.fromRGB(40, 40, 48),
+    Text = Color3.fromRGB(220, 220, 230),
+    TextDim = Color3.fromRGB(150, 150, 165),
+    Accent = Color3.fromRGB(255, 200, 50),
+    AccentHover = Color3.fromRGB(255, 215, 75),
+    CheckboxBG = Color3.fromRGB(45, 45, 55),
+    CheckboxChecked = Color3.fromRGB(255, 200, 50),
+    Border = Color3.fromRGB(60, 60, 75),
+    Divider = Color3.fromRGB(50, 50, 62),
+    Shadow = Color3.fromRGB(0, 0, 0),
+    SearchBox = Color3.fromRGB(38, 38, 48),
 }
 
--- ============================================
--- VARIÁVEIS GLOBAIS
--- ============================================
-local MainFrame
-local StatusLabel
-local ConsoleOutput
-local UIBlur
-local Dragging = false
-local DragStart = Vector2.new()
-local DragStartPosition = UDim2.new()
-local Logs = {}
-local CurrentTab = "Auto"
-local Toggles = {}
+-- ═══════════════════════════════════════════════════════════════
+-- 2. CRIAÇÃO DO GUI PRINCIPAL
+-- ═══════════════════════════════════════════════════════════════
 
--- ============================================
--- FUNÇÕES AUXILIARES
--- ============================================
-local function CreateTween(object, properties, duration, style)
-    style = style or Enum.EasingStyle.Quad
-    local tweenInfo = TweenInfo.new(duration or 0.3, style)
-    local tween = TweenService:Create(object, tweenInfo, properties)
-    return tween
+-- 2.1 ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CarFlipperGUI"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+-- 2.2 MainFrame (Janela Principal)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 420, 0, 580)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, -290)
+MainFrame.BackgroundColor3 = COLORS.Background
+MainFrame.BackgroundTransparency = 0
+MainFrame.Parent = ScreenGui
+
+-- Sombra (Shadow)
+local Shadow = Instance.new("Frame")
+Shadow.Name = "Shadow"
+Shadow.Size = UDim2.new(1, 12, 1, 12)
+Shadow.Position = UDim2.new(0, -6, 0, -6)
+Shadow.BackgroundColor3 = COLORS.Shadow
+Shadow.BackgroundTransparency = 0.6
+Shadow.BorderSizePixel = 0
+Shadow.Parent = MainFrame
+
+local ShadowCorner = Instance.new("UICorner")
+ShadowCorner.CornerRadius = UDim.new(0, 14)
+ShadowCorner.Parent = Shadow
+
+-- 2.3 UI Components (MainFrame)
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = COLORS.Border
+MainStroke.Thickness = 1
+MainStroke.Parent = MainFrame
+
+-- ═══════════════════════════════════════════════════════════════
+-- 3. BARRA DE TÍTULO (TITLE BAR)
+-- ═══════════════════════════════════════════════════════════════
+
+-- 3.1 TitleBar
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 44)
+TitleBar.BackgroundColor3 = COLORS.TitleBar
+TitleBar.BackgroundTransparency = 0
+TitleBar.Parent = MainFrame
+
+local TitleBarCorner = Instance.new("UICorner")
+TitleBarCorner.CornerRadius = UDim.new(0, 12)
+TitleBarCorner.Parent = TitleBar
+
+-- 3.2 Title
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, -50, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Car Flipper - GomezXitado"
+Title.TextColor3 = COLORS.Text
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamSemibold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.TextYAlignment = Enum.TextYAlignment.Center
+Title.Parent = TitleBar
+
+-- 3.3 CloseButton (X)
+local CloseButton = Instance.new("ImageButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -38, 0.5, -15)
+CloseButton.BackgroundColor3 = COLORS.TitleBar
+CloseButton.BackgroundTransparency = 0.5
+CloseButton.Image = "rbxassetid://10747329800" -- Ícone X
+CloseButton.ImageColor3 = COLORS.TextDim
+CloseButton.Parent = TitleBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(1, 0)
+CloseCorner.Parent = CloseButton
+
+-- Tween para CloseButton
+CloseButton.MouseEnter:Connect(function()
+    TweenService:Create(CloseButton, TweenInfo.new(0.15), {
+        BackgroundColor3 = Color3.fromRGB(200, 40, 40),
+        ImageColor3 = Color3.fromRGB(255, 255, 255)
+    }):Play()
+end)
+
+CloseButton.MouseLeave:Connect(function()
+    TweenService:Create(CloseButton, TweenInfo.new(0.15), {
+        BackgroundColor3 = COLORS.TitleBar,
+        ImageColor3 = COLORS.TextDim
+    }):Play()
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
+        Size = UDim2.new(0, 420, 0, 0),
+        Position = UDim2.new(0.5, -210, 0.5, 0)
+    }):Play()
+    task.wait(0.25)
+    ScreenGui.Enabled = false
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 4. ABAS (TABS)
+-- ═══════════════════════════════════════════════════════════════
+
+-- 4.1 TabContainer
+local TabContainer = Instance.new("Frame")
+TabContainer.Name = "TabContainer"
+TabContainer.Size = UDim2.new(1, 0, 0, 44)
+TabContainer.Position = UDim2.new(0, 0, 0, 44)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Parent = MainFrame
+
+-- 4.2 AutoTab
+local AutoTab = Instance.new("TextButton")
+AutoTab.Name = "AutoTab"
+AutoTab.Size = UDim2.new(0.5, -1, 1, -4)
+AutoTab.Position = UDim2.new(0, 0, 0, 2)
+AutoTab.BackgroundColor3 = COLORS.Frame
+AutoTab.Text = "Auto"
+AutoTab.TextColor3 = COLORS.Text
+AutoTab.TextSize = 14
+AutoTab.Font = Enum.Font.GothamMedium
+AutoTab.Parent = TabContainer
+
+local AutoTabCorner = Instance.new("UICorner")
+AutoTabCorner.CornerRadius = UDim.new(0, 8)
+AutoTabCorner.Parent = AutoTab
+
+-- 4.3 RunOnceTab
+local RunOnceTab = Instance.new("TextButton")
+RunOnceTab.Name = "RunOnceTab"
+RunOnceTab.Size = UDim2.new(0.5, -1, 1, -4)
+RunOnceTab.Position = UDim2.new(0.5, 1, 0, 2)
+RunOnceTab.BackgroundColor3 = COLORS.Frame
+RunOnceTab.Text = "Run Once"
+RunOnceTab.TextColor3 = COLORS.Text
+RunOnceTab.TextSize = 14
+RunOnceTab.Font = Enum.Font.GothamMedium
+RunOnceTab.Parent = TabContainer
+
+local RunOnceTabCorner = Instance.new("UICorner")
+RunOnceTabCorner.CornerRadius = UDim.new(0, 8)
+RunOnceTabCorner.Parent = RunOnceTab
+
+-- Estado das Abas
+local ActiveTab = "Auto"
+
+-- Função para atualizar abas
+local function UpdateTabs(active)
+    ActiveTab = active
+    
+    -- AutoTab
+    TweenService:Create(AutoTab, TweenInfo.new(0.2), {
+        BackgroundColor3 = (active == "Auto") and COLORS.Accent or COLORS.Frame,
+        TextColor3 = (active == "Auto") and COLORS.Background or COLORS.Text
+    }):Play()
+    
+    -- RunOnceTab
+    TweenService:Create(RunOnceTab, TweenInfo.new(0.2), {
+        BackgroundColor3 = (active == "RunOnce") and COLORS.Accent or COLORS.Frame,
+        TextColor3 = (active == "RunOnce") and COLORS.Background or COLORS.Text
+    }):Play()
 end
 
-local function AddLog(text, color)
-    color = color or Config.Theme.TextSecondary
-    table.insert(Logs, {Text = text, Color = color})
-    if #Logs > 100 then
-        table.remove(Logs, 1)
+-- Eventos das Abas
+AutoTab.MouseButton1Click:Connect(function() UpdateTabs("Auto") end)
+RunOnceTab.MouseButton1Click:Connect(function() UpdateTabs("RunOnce") end)
+
+-- Inicializar com Auto ativo
+UpdateTabs("Auto")
+
+-- ═══════════════════════════════════════════════════════════════
+-- 5. SEARCH BOX (TEXTBOX)
+-- ═══════════════════════════════════════════════════════════════
+
+-- 5.1 SearchBox Container
+local SearchBox = Instance.new("Frame")
+SearchBox.Name = "SearchBox"
+SearchBox.Size = UDim2.new(1, -20, 0, 38)
+SearchBox.Position = UDim2.new(0, 10, 0, 88)
+SearchBox.BackgroundTransparency = 1
+SearchBox.Parent = MainFrame
+
+-- 5.2 TextBox
+local SearchTextBox = Instance.new("TextBox")
+SearchTextBox.Name = "SearchTextBox"
+SearchTextBox.Size = UDim2.new(0.8, -5, 1, 0)
+SearchTextBox.Position = UDim2.new(0, 0, 0, 0)
+SearchTextBox.BackgroundColor3 = COLORS.SearchBox
+SearchTextBox.Text = ""
+SearchTextBox.PlaceholderText = "Digite algo..."
+SearchTextBox.PlaceholderColor3 = COLORS.TextDim
+SearchTextBox.TextColor3 = COLORS.Text
+SearchTextBox.TextSize = 13
+SearchTextBox.Font = Enum.Font.Gotham
+SearchTextBox.ClearTextOnFocus = false
+SearchTextBox.Parent = SearchBox
+
+local SearchCorner = Instance.new("UICorner")
+SearchCorner.CornerRadius = UDim.new(0, 8)
+SearchCorner.Parent = SearchTextBox
+
+local SearchStroke = Instance.new("UIStroke")
+SearchStroke.Color = COLORS.Border
+SearchStroke.Thickness = 1
+SearchStroke.Parent = SearchTextBox
+
+-- 5.3 SendButton
+local SendButton = Instance.new("TextButton")
+SendButton.Name = "SendButton"
+SendButton.Size = UDim2.new(0.2, -5, 1, 0)
+SendButton.Position = UDim2.new(0.8, 10, 0, 0)
+SendButton.BackgroundColor3 = COLORS.Accent
+SendButton.Text = "Enviar"
+SendButton.TextColor3 = COLORS.Background
+SendButton.TextSize = 13
+SendButton.Font = Enum.Font.GothamMedium
+SendButton.Parent = SearchBox
+
+local SendCorner = Instance.new("UICorner")
+SendCorner.CornerRadius = UDim.new(0, 8)
+SendCorner.Parent = SendButton
+
+-- Tween para SendButton
+SendButton.MouseEnter:Connect(function()
+    TweenService:Create(SendButton, TweenInfo.new(0.15), {
+        BackgroundColor3 = COLORS.AccentHover
+    }):Play()
+end)
+
+SendButton.MouseLeave:Connect(function()
+    TweenService:Create(SendButton, TweenInfo.new(0.15), {
+        BackgroundColor3 = COLORS.Accent
+    }):Play()
+end)
+
+SendButton.MouseButton1Click:Connect(function()
+    local text = SearchTextBox.Text
+    if text ~= "" then
+        print("[Car Flipper] Enviado:", text)
+        SearchTextBox.Text = ""
+        -- Aqui você pode adicionar a lógica para processar o texto
     end
-    UpdateConsole()
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 6. STATUS LABEL
+-- ═══════════════════════════════════════════════════════════════
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Size = UDim2.new(1, -20, 0, 24)
+StatusLabel.Position = UDim2.new(0, 10, 0, 132)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "[Car Flipper] Idle"
+StatusLabel.TextColor3 = COLORS.Text
+StatusLabel.TextSize = 13
+StatusLabel.Font = Enum.Font.GothamMedium
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
+StatusLabel.Parent = MainFrame
+
+-- ═══════════════════════════════════════════════════════════════
+-- 7. DIVISOR DE SEÇÃO
+-- ═══════════════════════════════════════════════════════════════
+
+local function CreateDivider(yPosition)
+    local Divider = Instance.new("Frame")
+    Divider.Name = "Divider"
+    Divider.Size = UDim2.new(0.9, 0, 0, 1)
+    Divider.Position = UDim2.new(0.05, 0, 0, yPosition)
+    Divider.BackgroundColor3 = COLORS.Divider
+    Divider.BackgroundTransparency = 0
+    Divider.BorderSizePixel = 0
+    Divider.Parent = MainFrame
+    return Divider
 end
 
-local function UpdateConsole()
-    if not ConsoleOutput then return end
-    local text = ""
-    for i = math.max(1, #Logs - 30), #Logs do
-        local log = Logs[i]
-        if log then
-            text = text .. log.Text .. "\n"
-        end
-    end
-    ConsoleOutput.Text = text
+local function CreateSectionTitle(title, yPosition)
+    local Label = Instance.new("TextLabel")
+    Label.Name = "SectionTitle"
+    Label.Size = UDim2.new(0.9, 0, 0, 22)
+    Label.Position = UDim2.new(0.05, 0, 0, yPosition)
+    Label.BackgroundTransparency = 1
+    Label.Text = title
+    Label.TextColor3 = COLORS.TextDim
+    Label.TextSize = 12
+    Label.Font = Enum.Font.GothamBold
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.TextYAlignment = Enum.TextYAlignment.Center
+    Label.Parent = MainFrame
+    return Label
 end
 
--- ============================================
--- CRIAÇÃO DA INTERFACE
--- ============================================
-local function CreateUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "CarFlipperUI"
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- ═══════════════════════════════════════════════════════════════
+-- 8. CHECKBOX COMPONENT
+-- ═══════════════════════════════════════════════════════════════
 
-    -- Blur
-    if Config.BlurEnabled then
-        UIBlur = Instance.new("BlurEffect")
-        UIBlur.Size = 0
-        UIBlur.Parent = game:GetService("Lighting")
-    end
-
-    -- Main Frame
-    MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.fromOffset(400, 520)
-    MainFrame.Position = UDim2.fromScale(0.5, 0.5) - UDim2.fromOffset(200, 260)
-    MainFrame.BackgroundColor3 = Config.Theme.Background
-    MainFrame.BackgroundTransparency = 0.95
-    MainFrame.Parent = ScreenGui
-    MainFrame.ClipsDescendants = true
-
-    -- Shadow
-    local Shadow = Instance.new("ImageLabel")
-    Shadow.Name = "Shadow"
-    Shadow.Size = UDim2.fromScale(1, 1)
-    Shadow.Position = UDim2.fromOffset(5, 5)
-    Shadow.BackgroundColor3 = Color3.fromHex("000000")
-    Shadow.BackgroundTransparency = 0.5
-    Shadow.Image = "rbxassetid://1313878513"
-    Shadow.ImageColor3 = Color3.fromHex("000000")
-    Shadow.ImageTransparency = 0.8
-    Shadow.ZIndex = 0
-    Shadow.Parent = MainFrame
-
-    -- UI Corner
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 8)
-    Corner.Parent = MainFrame
-
-    -- UI Stroke
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Config.Theme.Border
-    Stroke.Thickness = 1
-    Stroke.Parent = MainFrame
-
-    -- ============================================
-    -- HEADER
-    -- ============================================
-    local Header = Instance.new("Frame")
-    Header.Name = "Header"
-    Header.Size = UDim2.fromScale(1, 0.07)
-    Header.BackgroundColor3 = Config.Theme.BackgroundSecondary
-    Header.Parent = MainFrame
-
-    local HeaderCorner = Instance.new("UICorner")
-    HeaderCorner.CornerRadius = UDim.new(0, 8)
-    HeaderCorner.Parent = Header
-
-    -- Título (centralizado)
-    local Title = Instance.new("TextLabel")
-    Title.Name = "Title"
-    Title.Size = UDim2.fromScale(1, 1)
-    Title.BackgroundTransparency = 1
-    Title.Text = Config.WindowTitle
-    Title.TextColor3 = Config.Theme.Primary
-    Title.TextSize = 15
-    Title.TextXAlignment = Enum.TextXAlignment.Center
-    Title.Font = Config.FontBold
-    Title.Parent = Header
-
-    -- Botão Fechar
-    local CloseButton = Instance.new("TextButton")
-    CloseButton.Name = "CloseButton"
-    CloseButton.Size = UDim2.fromOffset(24, 24)
-    CloseButton.Position = UDim2.fromScale(1, 0) - UDim2.fromOffset(30, 4)
-    CloseButton.BackgroundColor3 = Config.Theme.Background
-    CloseButton.Text = "✕"
-    CloseButton.TextColor3 = Config.Theme.TextMuted
-    CloseButton.TextSize = 12
-    CloseButton.TextScaled = true
-    CloseButton.Font = Config.Font
-    CloseButton.Parent = Header
-
-    local CloseCorner = Instance.new("UICorner")
-    CloseCorner.CornerRadius = UDim.new(0, 4)
-    CloseCorner.Parent = CloseButton
-
-    -- ============================================
-    -- TABS
-    -- ============================================
-    local TabBar = Instance.new("Frame")
-    TabBar.Name = "TabBar"
-    TabBar.Size = UDim2.fromScale(1, 0.055)
-    TabBar.Position = UDim2.fromScale(0, 0.07)
-    TabBar.BackgroundColor3 = Config.Theme.BackgroundSecondary
-    TabBar.Parent = MainFrame
-
-    local TabCorner = Instance.new("UICorner")
-    TabCorner.CornerRadius = UDim.new(0, 4)
-    TabCorner.Parent = TabBar
-
-    -- Botões das abas
-    local Tabs = {"Auto", "Run Once"}
-    local TabButtons = {}
-
-    for i, tabName in ipairs(Tabs) do
-        local btn = Instance.new("TextButton")
-        btn.Name = tabName
-        btn.Size = UDim2.fromScale(0.5, 1)
-        btn.Position = UDim2.fromScale((i-1) * 0.5, 0)
-        btn.BackgroundColor3 = i == 1 and Config.Theme.Primary or Config.Theme.BackgroundSecondary
-        btn.Text = tabName
-        btn.TextColor3 = i == 1 and Config.Theme.Background or Config.Theme.TextSecondary
-        btn.TextSize = 12
-        btn.Font = Config.FontBold
-        btn.Parent = TabBar
-
-        TabButtons[tabName] = btn
-    end
-
-    -- ============================================
-    -- STATUS
-    -- ============================================
-    local StatusBar = Instance.new("Frame")
-    StatusBar.Name = "StatusBar"
-    StatusBar.Size = UDim2.fromScale(1, 0.035)
-    StatusBar.Position = UDim2.fromScale(0, 0.125)
-    StatusBar.BackgroundColor3 = Config.Theme.BackgroundSecondary
-    StatusBar.Parent = MainFrame
-
-    StatusLabel = Instance.new("TextLabel")
-    StatusLabel.Name = "StatusLabel"
-    StatusLabel.Size = UDim2.fromScale(1, 1)
-    StatusLabel.Position = UDim2.fromOffset(10, 0)
-    StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Text = "[Car Flipper] Idle"
-    StatusLabel.TextColor3 = Config.Theme.TextSecondary
-    StatusLabel.TextSize = 10
-    StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    StatusLabel.Font = Config.Font
-    StatusLabel.Parent = StatusBar
-
-    -- ============================================
-    -- CONTENT (Scrollable)
-    -- ============================================
-    local ContentFrame = Instance.new("ScrollingFrame")
-    ContentFrame.Name = "ContentFrame"
-    ContentFrame.Size = UDim2.fromScale(1, 0.62)
-    ContentFrame.Position = UDim2.fromScale(0, 0.16)
-    ContentFrame.BackgroundColor3 = Config.Theme.Background
-    ContentFrame.BackgroundTransparency = 0.5
-    ContentFrame.Parent = MainFrame
-    ContentFrame.ScrollBarThickness = 2
-    ContentFrame.ScrollBarImageColor3 = Config.Theme.Primary
-    ContentFrame.ScrollBarImageTransparency = 0.3
-
-    local ContentCorner = Instance.new("UICorner")
-    ContentCorner.CornerRadius = UDim.new(0, 4)
-    ContentCorner.Parent = ContentFrame
-
-    -- Layout
-    local ContentLayout = Instance.new("UIListLayout")
-    ContentLayout.Name = "ContentLayout"
-    ContentLayout.FillDirection = Enum.FillDirection.Vertical
-    ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ContentLayout.Padding = UDim.new(0, 1)
-    ContentLayout.Parent = ContentFrame
-
-    -- ============================================
-    -- CATEGORIAS (exatamente como na imagem)
-    -- ============================================
-    local Categories = {
-        {
-            Name = "Base",
-            Items = {
-                "Claim Cash",
-                "Claim Parts",
-                "Buy Upgrades",
-                "Claim Containers",
-                "Open Containers",
-                "Claim Quests",
-                "Deliver Junk"
-            }
-        },
-        {
-            Name = "Cars",
-            Items = {
-                "Fix Cars",
-                "Sell Fixed Cars",
-                "Update Stands",
-                "Buy, Fix, Sell Cheapest"
-            }
-        },
-        {
-            Name = "Rewards",
-            Items = {
-                "Claim Playtime Rewards",
-                "Claim Daily Rewards"
-            }
-        }
-    }
-
-    -- ============================================
-    -- CRIAÇÃO DOS TOGGLES (estilo imagem)
-    -- ============================================
-    local function CreateToggle(itemName, parent)
-        local frame = Instance.new("Frame")
-        frame.Name = itemName
-        frame.Size = UDim2.fromScale(1, 0.065)
-        frame.BackgroundColor3 = Config.Theme.BackgroundTertiary
-        frame.BackgroundTransparency = 0.3
-        frame.Parent = parent
-
-        local frameCorner = Instance.new("UICorner")
-        frameCorner.CornerRadius = UDim.new(0, 3)
-        frameCorner.Parent = frame
-
-        -- Label (com "-" na frente como na imagem)
-        local label = Instance.new("TextLabel")
-        label.Name = "Label"
-        label.Size = UDim2.fromScale(0.8, 1)
-        label.Position = UDim2.fromOffset(12, 0)
-        label.BackgroundTransparency = 1
-        label.Text = "- " .. itemName
-        label.TextColor3 = Config.Theme.Text
-        label.TextSize = 11
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Font = Config.Font
-        label.Parent = frame
-
-        -- Toggle Button (à direita como na imagem)
-        local toggleBtn = Instance.new("TextButton")
-        toggleBtn.Name = "ToggleButton"
-        toggleBtn.Size = UDim2.fromOffset(32, 16)
-        toggleBtn.Position = UDim2.fromScale(1, 0) - UDim2.fromOffset(38, 2)
-        toggleBtn.BackgroundColor3 = Config.Theme.Background
-        toggleBtn.Text = ""
-        toggleBtn.Parent = frame
-
-        local toggleCorner = Instance.new("UICorner")
-        toggleCorner.CornerRadius = UDim.new(1, 0)
-        toggleCorner.Parent = toggleBtn
-
-        -- Indicator
-        local toggleIndicator = Instance.new("Frame")
-        toggleIndicator.Name = "Indicator"
-        toggleIndicator.Size = UDim2.fromOffset(10, 10)
-        toggleIndicator.Position = UDim2.fromOffset(3, 3)
-        toggleIndicator.BackgroundColor3 = Config.Theme.TextMuted
-        toggleIndicator.BackgroundTransparency = 0.5
-        toggleIndicator.Parent = toggleBtn
-
-        local indicatorCorner = Instance.new("UICorner")
-        indicatorCorner.CornerRadius = UDim.new(1, 0)
-        indicatorCorner.Parent = toggleIndicator
-
-        local state = false
-
-        local function UpdateToggle()
-            state = not state
-            local targetColor = state and Config.Theme.Primary or Config.Theme.Background
-            local indicatorColor = state and Config.Theme.Background or Config.Theme.TextMuted
-
-            CreateTween(toggleBtn, {BackgroundColor3 = targetColor}, 0.15):Play()
-            CreateTween(toggleIndicator, {
-                BackgroundColor3 = indicatorColor,
-                BackgroundTransparency = state and 0 or 0.5
-            }, 0.15):Play()
-            CreateTween(toggleIndicator, {
-                Position = state and UDim2.fromOffset(19, 3) or UDim2.fromOffset(3, 3)
-            }, 0.2):Play()
-
-            local status = state and "✓" or "✗"
-            AddLog(string.format("[%s] %s %s", CurrentTab, itemName, status), 
-                   state and Config.Theme.Primary or Config.Theme.TextMuted)
-        end
-
-        toggleBtn.MouseButton1Click:Connect(UpdateToggle)
-        Toggles[itemName] = {
-            State = function() return state end,
-            Toggle = UpdateToggle
-        }
-
-        return frame
-    end
-
-    -- Build Content
-    local function BuildContent()
-        -- Limpar conteúdo
-        for _, child in ipairs(ContentFrame:GetChildren()) do
-            if child:IsA("Frame") or child:IsA("TextLabel") then
-                child:Destroy()
-            end
-        end
-
-        for _, category in ipairs(Categories) do
-            -- Categoria Label (como na imagem)
-            local catLabel = Instance.new("TextLabel")
-            catLabel.Name = "CategoryLabel"
-            catLabel.Size = UDim2.fromScale(1, 0.04)
-            catLabel.BackgroundTransparency = 1
-            catLabel.Text = category.Name
-            catLabel.TextColor3 = Config.Theme.Primary
-            catLabel.TextSize = 12
-            catLabel.TextXAlignment = Enum.TextXAlignment.Left
-            catLabel.Font = Config.FontBold
-            catLabel.Parent = ContentFrame
-
-            -- Items
-            for _, itemName in ipairs(category.Items) do
-                CreateToggle(itemName, ContentFrame)
-            end
-        end
-    end
-
-    BuildContent()
-
-    -- ============================================
-    -- BOTTOM BAR - TextBox e Executar
-    -- ============================================
-    local BottomBar = Instance.new("Frame")
-    BottomBar.Name = "BottomBar"
-    BottomBar.Size = UDim2.fromScale(1, 0.08)
-    BottomBar.Position = UDim2.fromScale(0, 0.78)
-    BottomBar.BackgroundColor3 = Config.Theme.BackgroundSecondary
-    BottomBar.Parent = MainFrame
-
-    local BottomCorner = Instance.new("UICorner")
-    BottomCorner.CornerRadius = UDim.new(0, 4)
-    BottomCorner.Parent = BottomBar
-
-    -- TextBox
-    local TextInput = Instance.new("TextBox")
-    TextInput.Name = "TextInput"
-    TextInput.Size = UDim2.fromScale(0.7, 0.7)
-    TextInput.Position = UDim2.fromOffset(8, 5)
-    TextInput.BackgroundColor3 = Config.Theme.BackgroundTertiary
-    TextInput.Text = ""
-    TextInput.TextColor3 = Config.Theme.Text
-    TextInput.TextSize = 11
-    TextInput.PlaceholderText = "Digite algo..."
-    TextInput.PlaceholderColor3 = Config.Theme.TextMuted
-    TextInput.Font = Config.Font
-    TextInput.ClearTextOnFocus = false
-    TextInput.Parent = BottomBar
-
-    local TextCorner = Instance.new("UICorner")
-    TextCorner.CornerRadius = UDim.new(0, 3)
-    TextCorner.Parent = TextInput
-
-    local TextStroke = Instance.new("UIStroke")
-    TextStroke.Color = Config.Theme.Border
-    TextStroke.Thickness = 1
-    TextStroke.Parent = TextInput
-
-    -- Execute Button
-    local ExecuteButton = Instance.new("TextButton")
-    ExecuteButton.Name = "ExecuteButton"
-    ExecuteButton.Size = UDim2.fromScale(0.22, 0.7)
-    ExecuteButton.Position = UDim2.fromScale(0.76, 0.15)
-    ExecuteButton.BackgroundColor3 = Config.Theme.Primary
-    ExecuteButton.Text = "▶ Executar"
-    ExecuteButton.TextColor3 = Config.Theme.Background
-    ExecuteButton.TextSize = 11
-    ExecuteButton.Font = Config.FontBold
-    ExecuteButton.Parent = BottomBar
-
-    local ExecCorner = Instance.new("UICorner")
-    ExecCorner.CornerRadius = UDim.new(0, 3)
-    ExecCorner.Parent = ExecuteButton
-
-    -- ============================================
-    -- CONSOLE
-    -- ============================================
-    local ConsoleFrame = Instance.new("Frame")
-    ConsoleFrame.Name = "ConsoleFrame"
-    ConsoleFrame.Size = UDim2.fromScale(1, 0.14)
-    ConsoleFrame.Position = UDim2.fromScale(0, 0.86)
-    ConsoleFrame.BackgroundColor3 = Config.Theme.BackgroundSecondary
-    ConsoleFrame.Parent = MainFrame
-
-    local ConsoleCorner = Instance.new("UICorner")
-    ConsoleCorner.CornerRadius = UDim.new(0, 8)
-    ConsoleCorner.Parent = ConsoleFrame
-
-    ConsoleOutput = Instance.new("TextBox")
-    ConsoleOutput.Name = "ConsoleOutput"
-    ConsoleOutput.Size = UDim2.fromScale(1, 1)
-    ConsoleOutput.Position = UDim2.fromOffset(8, 0)
-    ConsoleOutput.BackgroundTransparency = 1
-    ConsoleOutput.Text = "> Script Loaded..."
-    ConsoleOutput.TextColor3 = Config.Theme.TextMuted
-    ConsoleOutput.TextSize = 9
-    ConsoleOutput.TextXAlignment = Enum.TextXAlignment.Left
-    ConsoleOutput.TextYAlignment = Enum.TextYAlignment.Center
-    ConsoleOutput.Font = Enum.Font.Code
-    ConsoleOutput.ClearTextOnFocus = false
-    ConsoleOutput.Parent = ConsoleFrame
-
-    -- ============================================
-    -- EVENTOS
-    -- ============================================
-
-    -- Fechar
-    CloseButton.MouseButton1Click:Connect(function()
-        local tween = CreateTween(MainFrame, {
-            BackgroundTransparency = 1,
-            Size = UDim2.fromOffset(0, 0)
-        }, 0.3)
-        tween:Play()
-        tween.Completed:Connect(function()
-            MainFrame.Visible = false
-            if UIBlur then
-                CreateTween(UIBlur, {Size = 0}, 0.3):Play()
-            end
-        end)
-        if UIBlur then
-            CreateTween(UIBlur, {Size = 0}, 0.3):Play()
-        end
-    end)
-
-    -- Drag
-    Header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = true
-            DragStart = input.Position
-            DragStartPosition = MainFrame.Position
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - DragStart
-            MainFrame.Position = UDim2.new(
-                DragStartPosition.X.Scale,
-                DragStartPosition.X.Offset + delta.X,
-                DragStartPosition.Y.Scale,
-                DragStartPosition.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = false
-        end
-    end)
-
-    -- Tabs
-    for tabName, btn in pairs(TabButtons) do
-        btn.MouseButton1Click:Connect(function()
-            CurrentTab = tabName
-            for name, button in pairs(TabButtons) do
-                button.BackgroundColor3 = name == tabName and Config.Theme.Primary or Config.Theme.BackgroundSecondary
-                button.TextColor3 = name == tabName and Config.Theme.Background or Config.Theme.TextSecondary
-            end
-            AddLog("Tab: " .. tabName, Config.Theme.Primary)
-        end)
-    end
-
-    -- Execute
-    ExecuteButton.MouseButton1Click:Connect(function()
-        local text = TextInput.Text
-        if text ~= "" then
-            AddLog("▶ Executando: " .. text, Config.Theme.Primary)
-            StatusLabel.Text = "[Car Flipper] Executing..."
-            StatusLabel.TextColor3 = Config.Theme.Primary
-
-            task.wait(1.2)
-            StatusLabel.Text = "[Car Flipper] Idle"
-            StatusLabel.TextColor3 = Config.Theme.TextSecondary
-            AddLog("✓ Execução concluída", Config.Theme.Primary)
+local function CreateCheckbox(name, label, xPosition, yPosition, parent)
+    local Container = Instance.new("Frame")
+    Container.Name = name
+    Container.Size = UDim2.new(0.45, -10, 0, 28)
+    Container.Position = UDim2.new(xPosition, 0, 0, yPosition)
+    Container.BackgroundTransparency = 1
+    Container.Parent = parent
+    
+    -- Checkbox BG
+    local CheckboxBG = Instance.new("Frame")
+    CheckboxBG.Name = "CheckboxBG"
+    CheckboxBG.Size = UDim2.new(0, 18, 0, 18)
+    CheckboxBG.Position = UDim2.new(0, 0, 0.5, -9)
+    CheckboxBG.BackgroundColor3 = COLORS.CheckboxBG
+    CheckboxBG.Parent = Container
+    
+    local CheckboxCorner = Instance.new("UICorner")
+    CheckboxCorner.CornerRadius = UDim.new(0, 4)
+    CheckboxCorner.Parent = CheckboxBG
+    
+    -- Check Icon (invisível inicialmente)
+    local CheckIcon = Instance.new("TextLabel")
+    CheckIcon.Name = "CheckIcon"
+    CheckIcon.Size = UDim2.new(1, 0, 1, 0)
+    CheckIcon.BackgroundTransparency = 1
+    CheckIcon.Text = "✓"
+    CheckIcon.TextColor3 = COLORS.Background
+    CheckIcon.TextSize = 14
+    CheckIcon.Font = Enum.Font.GothamBold
+    CheckIcon.TextYAlignment = Enum.TextYAlignment.Center
+    CheckIcon.TextXAlignment = Enum.TextXAlignment.Center
+    CheckIcon.Visible = false
+    CheckIcon.Parent = CheckboxBG
+    
+    -- Label
+    local Label = Instance.new("TextLabel")
+    Label.Name = "Label"
+    Label.Size = UDim2.new(1, -24, 1, 0)
+    Label.Position = UDim2.new(0, 24, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = label
+    Label.TextColor3 = COLORS.Text
+    Label.TextSize = 13
+    Label.Font = Enum.Font.Gotham
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.TextYAlignment = Enum.TextYAlignment.Center
+    Label.Parent = Container
+    
+    -- Estado
+    local checked = false
+    
+    -- Função para alternar
+    local function Toggle()
+        checked = not checked
+        if checked then
+            TweenService:Create(CheckboxBG, TweenInfo.new(0.15), {
+                BackgroundColor3 = COLORS.CheckboxChecked
+            }):Play()
+            CheckIcon.Visible = true
         else
-            AddLog("⚠ Digite algo para executar", Config.Theme.Warning)
+            TweenService:Create(CheckboxBG, TweenInfo.new(0.15), {
+                BackgroundColor3 = COLORS.CheckboxBG
+            }):Play()
+            CheckIcon.Visible = false
         end
-    end)
-
-    -- Enter
-    TextInput.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            ExecuteButton.MouseButton1Click:Fire()
-        end
-    end)
-
-    -- ============================================
-    -- ANIMAÇÃO DE ABERTURA
-    -- ============================================
-    MainFrame.Visible = true
-    MainFrame.BackgroundTransparency = 1
-    MainFrame.Size = UDim2.fromOffset(0, 0)
-
-    if UIBlur then
-        CreateTween(UIBlur, {Size = 12}, 0.5):Play()
     end
-
-    task.wait(0.1)
-    local openTween = CreateTween(MainFrame, {
-        BackgroundTransparency = 0.05,
-        Size = UDim2.fromOffset(400, 520)
-    }, 0.4, Enum.EasingStyle.Back)
-    openTween:Play()
-
-    AddLog("✓ Car Flipper Interface carregada!", Config.Theme.Primary)
-
-    -- ============================================
-    -- RETORNO
-    -- ============================================
-    return {
-        MainFrame = MainFrame,
-        Toggles = Toggles,
-        AddLog = AddLog,
-        SetStatus = function(text, color)
-            StatusLabel.Text = "[Car Flipper] " .. text
-            StatusLabel.TextColor3 = color or Config.Theme.TextSecondary
-        end,
-        GetToggles = function() return Toggles end,
-    }
+    
+    -- Eventos
+    Container.MouseButton1Click:Connect(Toggle)
+    CheckboxBG.MouseButton1Click:Connect(Toggle)
+    Label.MouseButton1Click:Connect(Toggle)
+    
+    -- Hover
+    Container.MouseEnter:Connect(function()
+        TweenService:Create(Label, TweenInfo.new(0.15), {
+            TextColor3 = COLORS.Accent
+        }):Play()
+    end)
+    
+    Container.MouseLeave:Connect(function()
+        TweenService:Create(Label, TweenInfo.new(0.15), {
+            TextColor3 = COLORS.Text
+        }):Play()
+    end)
+    
+    return Container, Toggle
 end
 
--- ============================================
--- INICIALIZAÇÃO
--- ============================================
-local UI = CreateUI()
+-- ═══════════════════════════════════════════════════════════════
+-- 9. SEÇÃO BASE
+-- ═══════════════════════════════════════════════════════════════
 
--- Exportar para uso global
-_G.CarFlipperUI = UI
+local baseY = 160
 
-print("✅ Car Flipper - Gomezxitado carregado com sucesso!")
+-- Divisor
+CreateDivider(baseY)
+
+-- Título
+CreateSectionTitle("──────── Base ────────", baseY + 8)
+
+-- Checkboxes da Base (2 colunas)
+local baseItems = {
+    {name = "ClaimCash", label = "Claim Cash"},
+    {name = "ClaimParts", label = "Claim Parts"},
+    {name = "BuyUpgrades", label = "Buy Upgrades"},
+    {name = "ClaimContainers", label = "Claim Containers"},
+    {name = "OpenContainers", label = "Open Containers"},
+    {name = "ClaimQuests", label = "Claim Quests"},
+    {name = "DeliverJunk", label = "Deliver Junk"},
+}
+
+for i, item in ipairs(baseItems) do
+    local col = (i % 2 == 1) and 0 or 0.5
+    local row = math.floor((i - 1) / 2)
+    local yPos = baseY + 35 + (row * 30)
+    CreateCheckbox(item.name, item.label, col, yPos, MainFrame)
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 10. SEÇÃO CARS
+-- ═══════════════════════════════════════════════════════════════
+
+local carsY = baseY + 155
+
+-- Divisor
+CreateDivider(carsY)
+
+-- Título
+CreateSectionTitle("──────── Cars ────────", carsY + 8)
+
+-- Checkboxes da Cars
+local carsItems = {
+    {name = "FixCars", label = "Fix Cars"},
+    {name = "SellFixedCars", label = "Sell Fixed Cars"},
+    {name = "UpdateStands", label = "Update Stands"},
+    {name = "BuyFixSellCheapest", label = "Buy, Fix, Sell Cheapest"},
+}
+
+for i, item in ipairs(carsItems) do
+    local col = (i % 2 == 1) and 0 or 0.5
+    local row = math.floor((i - 1) / 2)
+    local yPos = carsY + 35 + (row * 30)
+    CreateCheckbox(item.name, item.label, col, yPos, MainFrame)
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 11. SEÇÃO REWARDS
+-- ═══════════════════════════════════════════════════════════════
+
+local rewardsY = carsY + 100
+
+-- Divisor
+CreateDivider(rewardsY)
+
+-- Título
+CreateSectionTitle("──────── Rewards ────────", rewardsY + 8)
+
+-- Checkboxes da Rewards
+local rewardsItems = {
+    {name = "ClaimPlaytimeRewards", label = "Claim Playtime Rewards"},
+    {name = "ClaimDailyRewards", label = "Claim Daily Rewards"},
+}
+
+for i, item in ipairs(rewardsItems) do
+    local col = (i % 2 == 1) and 0 or 0.5
+    local row = math.floor((i - 1) / 2)
+    local yPos = rewardsY + 35 + (row * 30)
+    CreateCheckbox(item.name, item.label, col, yPos, MainFrame)
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 12. FUNCIONALIDADE ARRASTÁVEL (DRAGGABLE)
+-- ═══════════════════════════════════════════════════════════════
+
+local dragging = false
+local dragStart = Vector2.new()
+local startPos = UDim2.new()
+
+TitleBar.MouseButton1Down:Connect(function(input)
+    dragging = true
+    dragStart = input.Position
+    startPos = MainFrame.Position
+    TitleBar.BackgroundTransparency = 0.1
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if dragging then
+            dragging = false
+            TitleBar.BackgroundTransparency = 0
+        end
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 13. ANIMAÇÃO DE ENTRADA
+-- ═══════════════════════════════════════════════════════════════
+
+MainFrame.Size = UDim2.new(0, 420, 0, 0)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, 0)
+
+task.wait(0.1)
+
+TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 420, 0, 580),
+    Position = UDim2.new(0.5, -210, 0.5, -290)
+}):Play()
+
+-- ═══════════════════════════════════════════════════════════════
+-- 14. EXPORTAÇÃO DE FUNÇÕES (Para uso externo)
+-- ═══════════════════════════════════════════════════════════════
+
+local CarFlipperAPI = {
+    GetStatus = function()
+        return StatusLabel.Text
+    end,
+    SetStatus = function(text)
+        StatusLabel.Text = text
+    end,
+    GetCheckboxState = function(name)
+        -- Implementar se necessário
+    end,
+    ToggleCheckbox = function(name)
+        -- Implementar se necessário
+    end,
+    GetSearchText = function()
+        return SearchTextBox.Text
+    end,
+    SetSearchText = function(text)
+        SearchTextBox.Text = text
+    end,
+    SetTab = function(tab)
+        if tab == "Auto" or tab == "RunOnce" then
+            UpdateTabs(tab)
+        end
+    end,
+    GetActiveTab = function()
+        return ActiveTab
+    end,
+    Close = function()
+        CloseButton.MouseButton1Click:Fire()
+    end,
+    Show = function()
+        ScreenGui.Enabled = true
+        MainFrame.Size = UDim2.new(0, 420, 0, 0)
+        MainFrame.Position = UDim2.new(0.5, -210, 0.5, 0)
+        task.wait(0.1)
+        TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 420, 0, 580),
+            Position = UDim2.new(0.5, -210, 0.5, -290)
+        }):Play()
+    end
+}
+
+-- Armazenar no _G para acesso global
+_G.CarFlipper = CarFlipperAPI
+
+print("✓ Car Flipper - GomezXitado carregado com sucesso!")
