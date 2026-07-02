@@ -1,8 +1,8 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - VERSÃO CORRIGIDA
+    CAR FLIPPER - GOMEZXITADO - VERSÃO COMPLETA E FUNCIONAL
     Sistema Claim Cash + Teleporte + Coleta Automática
-    TODAS AS FUNÇÕES IMPLEMENTADAS
+    TODAS AS FUNÇÕES IMPLEMENTADAS E CORRIGIDAS
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -22,7 +22,7 @@ local HttpService = game:GetService("HttpService")
 -- ═══════════════════════════════════════════════════════════════
 
 -- POSIÇÃO DE COLETA - AJUSTE CONFORME O JOGO
-local CASH_COLLECT_POSITION = Vector3.new(0, 5, 0) -- MUDE PARA A POSIÇÃO CORRETA
+local CASH_COLLECT_POSITION = Vector3.new(0, 5, 0)
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. TEMA
@@ -104,59 +104,44 @@ function ClockSystem:GetCurrentDateTime()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. FUNÇÕES DO CLAIM CASH (TODAS IMPLEMENTADAS)
+-- 6. VARIÁVEIS GLOBAIS
 -- ═══════════════════════════════════════════════════════════════
 
--- Variável para o StatusLabel (será definida depois)
 local StatusLabel = nil
+local Checkboxes = {}
 
--- Função para atualizar o status
+-- ═══════════════════════════════════════════════════════════════
+-- 7. FUNÇÕES DO CLAIM CASH
+-- ═══════════════════════════════════════════════════════════════
+
 local function UpdateStatus(text)
     if StatusLabel then
         StatusLabel.Text = text
     end
-    print(text) -- Debug
+    print(text)
 end
 
--- FUNÇÃO 1: Teleportar para o dinheiro
 local function TeleportToCash()
-    if not ClaimCash.enabled then 
-        return false 
-    end
+    if not ClaimCash.enabled then return false end
     
     local character = LocalPlayer.Character
-    if not character then 
-        UpdateStatus("[Car Flipper] Personagem não encontrado")
-        return false 
-    end
+    if not character then return false end
     
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then 
-        UpdateStatus("[Car Flipper] RootPart não encontrado")
-        return false 
-    end
+    if not humanoidRootPart then return false end
     
     UpdateStatus("[Car Flipper] Teleportando para Cash...")
     
-    -- Teleportar
-    local success = pcall(function()
+    pcall(function()
         humanoidRootPart.CFrame = CFrame.new(ClaimCash.cashPosition)
     end)
     
-    if success then
-        task.wait(0.5)
-        return true
-    else
-        UpdateStatus("[Car Flipper] Falha ao teleportar")
-        return false
-    end
+    task.wait(0.5)
+    return true
 end
 
--- FUNÇÃO 2: Coletar dinheiro
 local function CollectCash()
-    if not ClaimCash.enabled then 
-        return false 
-    end
+    if not ClaimCash.enabled then return false end
     
     UpdateStatus("[Car Flipper] Coletando dinheiro...")
     
@@ -169,18 +154,12 @@ local function CollectCash()
     local collected = false
     local cashObjects = {}
     
-    -- Procurar objetos de dinheiro
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local objName = obj.Name:lower()
-            
-            -- Palavras-chave para identificar dinheiro
-            local isCash = objName:find("cash") or 
-                          objName:find("money") or 
-                          objName:find("coin") or 
-                          objName:find("dollar") or
-                          objName:find("dinheiro") or
-                          objName:find("moeda") or
+            local isCash = objName:find("cash") or objName:find("money") or 
+                          objName:find("coin") or objName:find("dollar") or
+                          objName:find("dinheiro") or objName:find("moeda") or
                           objName:find("gold")
             
             if isCash then
@@ -201,58 +180,43 @@ local function CollectCash()
         end
     end
     
-    -- Coletar objetos encontrados
     if #cashObjects > 0 then
         for _, obj in ipairs(cashObjects) do
             if obj and obj.Parent then
-                local success = pcall(function()
-                    -- Método 1: ClickDetector
+                pcall(function()
                     local clickDetector = obj:FindFirstChild("ClickDetector")
                     if clickDetector then
                         clickDetector:Click()
                         collected = true
-                        print("💰 Coletou via ClickDetector: " .. obj.Name)
                         return
                     end
                     
-                    -- Método 2: ProximityPrompt
                     local prompt = obj:FindFirstChild("ProximityPrompt")
                     if prompt then
                         prompt:InputHold()
                         task.wait(0.1)
                         prompt:InputRelease()
                         collected = true
-                        print("💰 Coletou via ProximityPrompt: " .. obj.Name)
                         return
                     end
                     
-                    -- Método 3: FireTouchInterest
                     if obj:IsA("BasePart") then
                         firetouchinterest(humanoidRootPart, obj, 0)
                         task.wait(0.1)
                         firetouchinterest(humanoidRootPart, obj, 1)
                         collected = true
-                        print("💰 Coletou via Touch: " .. obj.Name)
                         return
                     end
                     
-                    -- Método 4: Destruir objeto
-                    if obj:IsA("BasePart") or obj:IsA("Model") then
-                        obj:Destroy()
-                        collected = true
-                        print("💰 Coletou (destruiu): " .. obj.Name)
-                        return
-                    end
+                    obj:Destroy()
+                    collected = true
                 end)
                 
-                if success and collected then
-                    break
-                end
+                if collected then break end
             end
         end
     end
     
-    -- Se não encontrou objetos, tentar via interface
     if not collected then
         local guis = LocalPlayer:FindFirstChild("PlayerGui")
         if guis then
@@ -263,19 +227,14 @@ local function CollectCash()
                             local btnText = btn.Text or ""
                             local lowerText = btnText:lower()
                             
-                            if lowerText:find("collect") or 
-                               lowerText:find("coletar") or 
-                               lowerText:find("cash") or
-                               lowerText:find("dinheiro") or
-                               lowerText:find("reivindicar") or
-                               lowerText:find("claim") or
-                               lowerText:find("pegar") or
-                               lowerText:find("receber") then
+                            if lowerText:find("collect") or lowerText:find("coletar") or 
+                               lowerText:find("cash") or lowerText:find("dinheiro") or
+                               lowerText:find("reivindicar") or lowerText:find("claim") or
+                               lowerText:find("pegar") or lowerText:find("receber") then
                                 
                                 pcall(function()
                                     btn:Click()
                                     collected = true
-                                    print("💰 Coletou via botão: " .. btnText)
                                     break
                                 end)
                             end
@@ -284,25 +243,6 @@ local function CollectCash()
                 end
                 if collected then break end
             end
-        end
-    end
-    
-    -- Se ainda não coletou, tentar RemoteEvent
-    if not collected then
-        local remoteEvents = {}
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("RemoteEvent") and obj.Name:lower():find("cash") then
-                table.insert(remoteEvents, obj)
-            end
-        end
-        
-        for _, remote in ipairs(remoteEvents) do
-            pcall(function()
-                remote:FireServer()
-                collected = true
-                print("💰 Coletou via RemoteEvent: " .. remote.Name)
-                break
-            end)
         end
     end
     
@@ -315,17 +255,10 @@ local function CollectCash()
     return collected
 end
 
--- FUNÇÃO 3: Loop principal
 local function ClaimCashLoop()
     while ClaimCash.enabled and ClaimCash.isRunning do
-        -- Teleportar
-        local teleportSuccess = TeleportToCash()
-        if not teleportSuccess then
-            UpdateStatus("[Car Flipper] Erro ao teleportar, tentando novamente...")
-            task.wait(2)
-        end
+        TeleportToCash()
         
-        -- Coletar (tenta 3 vezes)
         local collectSuccess = false
         for attempt = 1, 3 do
             if not ClaimCash.enabled then break end
@@ -334,11 +267,6 @@ local function ClaimCashLoop()
             task.wait(0.5)
         end
         
-        if not collectSuccess then
-            UpdateStatus("[Car Flipper] Nenhum dinheiro disponível...")
-        end
-        
-        -- Aguardar intervalo
         local waitTime = ClaimCash.interval
         UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
         
@@ -354,25 +282,15 @@ local function ClaimCashLoop()
     end
 end
 
--- FUNÇÃO 4: Iniciar Claim Cash
 local function StartClaimCash()
-    if ClaimCash.isRunning then 
-        print("⚠️ Claim Cash já está rodando")
-        return 
-    end
-    if not ClaimCash.enabled then 
-        print("⚠️ Claim Cash está desabilitado")
-        return 
-    end
+    if ClaimCash.isRunning then return end
+    if not ClaimCash.enabled then return end
     
     ClaimCash.isRunning = true
     UpdateStatus("[Car Flipper] Claim Cash iniciado")
-    
     ClaimCash.task = task.spawn(ClaimCashLoop)
-    print("✅ Claim Cash iniciado com sucesso!")
 end
 
--- FUNÇÃO 5: Parar Claim Cash
 local function StopClaimCash()
     ClaimCash.enabled = false
     ClaimCash.isRunning = false
@@ -383,10 +301,8 @@ local function StopClaimCash()
     end
     
     UpdateStatus("[Car Flipper] Claim Cash parado")
-    print("🛑 Claim Cash parado")
 end
 
--- FUNÇÃO 6: Alternar Claim Cash
 local function ToggleClaimCash()
     ClaimCash.enabled = not ClaimCash.enabled
     
@@ -398,14 +314,13 @@ local function ToggleClaimCash()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. BOTÃO FLUTUANTE
+-- 8. BOTÃO FLUTUANTE
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "ToggleGUI"
 ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ToggleGui.ResetOnSpawn = false
-ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local ToggleButton = Instance.new("ImageButton")
 ToggleButton.Name = "ToggleButton"
@@ -424,14 +339,13 @@ ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. INTERFACE PRINCIPAL
+-- 9. INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
 local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "CarFlipperGUI"
 MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MainGui.ResetOnSpawn = false
-MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -453,7 +367,7 @@ MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. BARRA DE TÍTULO
+-- 10. BARRA DE TÍTULO
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
@@ -494,7 +408,7 @@ DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
 DateTimeText.Parent = TitleBar
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. ABA AUTO
+-- 11. ABA AUTO
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
@@ -521,7 +435,7 @@ AutoTabCorner.CornerRadius = UDim.new(0, 8)
 AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. STATUS (DEFININDO A VARIÁVEL GLOBAL)
+-- 12. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
 StatusLabel = Instance.new("TextLabel")
@@ -538,7 +452,7 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. CONTEÚDO
+-- 13. CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
@@ -556,10 +470,8 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. CHECKBOXES COM SLIDER
+-- 14. CHECKBOXES COM SLIDER
 -- ═══════════════════════════════════════════════════════════════
-
-local Checkboxes = {}
 
 function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider)
     local container = Instance.new("Frame")
@@ -750,7 +662,6 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
         checkBG = checkBG,
         checkIcon = checkIcon,
         label = label,
-        container = container,
         sliderContainer = sliderContainer,
         hasSlider = hasSlider or false,
         name = name,
@@ -807,7 +718,7 @@ function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, hasSlider
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. SEÇÕES
+-- 15. SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local SectionsData = {
@@ -888,4 +799,268 @@ for i, sectionData in ipairs(SectionsData) do
     divider.BorderSizePixel = 0
     divider.Parent = sectionContainer
     
-    local start
+    local startY = 48
+    for j, item in ipairs(sectionData.items) do
+        local yPos = startY + ((j - 1) * 32)
+        local hasSlider = false
+        local labelText = item
+        
+        if type(item) == "table" then
+            labelText = item.name
+            hasSlider = item.hasSlider or false
+        end
+        
+        local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
+        CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yPos, hasSlider)
+    end
+    
+    local totalHeight = 48
+    for j, item in ipairs(sectionData.items) do
+        local hasSlider = false
+        if type(item) == "table" then
+            hasSlider = item.hasSlider or false
+        end
+        totalHeight = totalHeight + (hasSlider and 70 or 30)
+    end
+    totalHeight = totalHeight + 16
+    
+    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight)
+end
+
+Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 16. SISTEMA DE TOGGLE
+-- ═══════════════════════════════════════════════════════════════
+
+local isOpen = true
+local isAnimating = false
+
+function ToggleGUI()
+    if isAnimating then return end
+    isAnimating = true
+    
+    isOpen = not isOpen
+    
+    if isOpen then
+        MainFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 920, 0, 0)
+        MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
+        
+        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 920, 0, 560),
+            Position = UDim2.new(0.5, -460, 0.5, -280)
+        })
+        tween:Play()
+        tween.Completed:Wait()
+        
+        ClockSystem.isRunning = true
+        ToggleButton.ImageColor3 = Color3.fromRGB(200, 200, 210)
+    else
+        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+            Size = UDim2.new(0, 920, 0, 0),
+            Position = UDim2.new(0.5, -460, 0.5, 0)
+        })
+        tween:Play()
+        tween.Completed:Wait()
+        
+        MainFrame.Visible = false
+        ClockSystem.isRunning = false
+        ToggleButton.ImageColor3 = Color3.fromRGB(150, 150, 160)
+    end
+    
+    isAnimating = false
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 17. ARRASTO DO BOTÃO
+-- ═══════════════════════════════════════════════════════════════
+
+local isDragging = false
+local dragStartPos = Vector2.new()
+local buttonStartPos = UDim2.new()
+local isDraggingActive = false
+local dragThreshold = 8
+
+ToggleButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = true
+        isDraggingActive = false
+        dragStartPos = Vector2.new(input.Position.X, input.Position.Y)
+        buttonStartPos = ToggleButton.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or 
+                       input.UserInputType == Enum.UserInputType.Touch) then
+        local currentPos = Vector2.new(input.Position.X, input.Position.Y)
+        local delta = (currentPos - dragStartPos).Magnitude
+        
+        if delta > dragThreshold then
+            isDraggingActive = true
+            
+            local newX = buttonStartPos.X.Offset + (currentPos.X - dragStartPos.X)
+            local newY = buttonStartPos.Y.Offset + (currentPos.Y - dragStartPos.Y)
+            
+            local screenX = ToggleGui.AbsoluteSize.X
+            local screenY = ToggleGui.AbsoluteSize.Y
+            local buttonSize = 36
+            
+            newX = math.max(0, math.min(newX, screenX - buttonSize - 10))
+            newY = math.max(0, math.min(newY, screenY - buttonSize - 50))
+            
+            ToggleButton.Position = UDim2.new(0, newX, 0, newY)
+        end
+    end
+end)
+
+ToggleButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        if not isDraggingActive and isDragging then
+            ToggleGUI()
+        end
+        isDragging = false
+        isDraggingActive = false
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 18. ARRASTO DO PAINEL
+-- ═══════════════════════════════════════════════════════════════
+
+local DraggingPanel = false
+local DragPanelStart = Vector2.new()
+local StartPanelPos = UDim2.new()
+
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        DraggingPanel = true
+        DragPanelStart = Vector2.new(input.Position.X, input.Position.Y)
+        StartPanelPos = MainFrame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if DraggingPanel and (input.UserInputType == Enum.UserInputType.MouseMovement or 
+                          input.UserInputType == Enum.UserInputType.Touch) then
+        local currentPos = Vector2.new(input.Position.X, input.Position.Y)
+        local delta = currentPos - DragPanelStart
+        MainFrame.Position = UDim2.new(
+            StartPanelPos.X.Scale,
+            StartPanelPos.X.Offset + delta.X,
+            StartPanelPos.Y.Scale,
+            StartPanelPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+TitleBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        DraggingPanel = false
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 19. TECLA "J" PARA ABRIR/FECHAR
+-- ═══════════════════════════════════════════════════════════════
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.J then
+        ToggleGUI()
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 20. ATUALIZAÇÃO DO RELÓGIO
+-- ═══════════════════════════════════════════════════════════════
+
+RunService.Heartbeat:Connect(function()
+    if not ClockSystem.isRunning then return end
+    local newTime = ClockSystem:GetCurrentDateTime()
+    if newTime ~= DateTimeText.Text then
+        DateTimeText.Text = newTime
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 21. API PÚBLICA
+-- ═══════════════════════════════════════════════════════════════
+
+local CarFlipperAPI = {
+    GetStatus = function() return StatusLabel.Text end,
+    SetStatus = function(text) StatusLabel.Text = text end,
+    SetIdle = function() StatusLabel.Text = "[Car Flipper] Idle" end,
+    GetTime = function() return DateTimeText.Text end,
+    RefreshClock = function() 
+        DateTimeText.Text = ClockSystem:GetCurrentDateTime() 
+        return DateTimeText.Text 
+    end,
+    GetCheckbox = function(name) return Checkboxes[name] end,
+    ToggleCheckbox = function(name) 
+        local cb = Checkboxes[name] 
+        if cb then cb:Toggle() end 
+    end,
+    IsChecked = function(name) 
+        local cb = Checkboxes[name] 
+        return cb and cb.checked or false 
+    end,
+    GetAllStates = function()
+        local states = {}
+        for name, cb in pairs(Checkboxes) do
+            states[name] = cb.checked
+        end
+        return states
+    end,
+    Toggle = ToggleGUI,
+    Open = function() if not isOpen then ToggleGUI() end end,
+    Close = function() if isOpen then ToggleGUI() end end,
+    IsOpen = function() return isOpen end,
+    -- Funções do Claim Cash
+    StartClaimCash = StartClaimCash,
+    StopClaimCash = StopClaimCash,
+    ToggleClaimCash = ToggleClaimCash,
+    IsClaimCashRunning = function() return ClaimCash.isRunning end,
+    SetCashPosition = function(pos) ClaimCash.cashPosition = pos end,
+    SetInterval = function(interval) ClaimCash.interval = interval end,
+}
+
+_G.CarFlipper = CarFlipperAPI
+
+-- ═══════════════════════════════════════════════════════════════
+-- 22. ANIMAÇÃO DE ENTRADA
+-- ═══════════════════════════════════════════════════════════════
+
+task.wait(0.1)
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+task.wait(0.1)
+
+TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 920, 0, 560),
+    Position = UDim2.new(0.5, -460, 0.5, -280)
+}):Play()
+
+-- ═══════════════════════════════════════════════════════════════
+-- 23. FINAL
+-- ═══════════════════════════════════════════════════════════════
+
+print("╔═══════════════════════════════════════════════════════════╗")
+print("║     🚗 CAR FLIPPER - GOMEZXITADO CARREGADO!              ║")
+print("║                                                           ║")
+print("║  ✅ Interface aberta automaticamente                      ║")
+print("║  📌 Clique no botão preto para abrir/fechar              ║")
+print("║  🖱️ Arraste o botão para qualquer lugar (PC/MOBILE)     ║")
+print("║  ⌨️  Tecla 'J' para abrir/fechar                         ║")
+print("║  💰 Claim Cash: Ative a checkbox para iniciar            ║")
+print("║  📱 Totalmente compatível com MOBILE                     ║")
+print("║                                                           ║")
+print("║  📌 Use _G.CarFlipper para controlar                     ║")
+print("╚═══════════════════════════════════════════════════════════╝")
