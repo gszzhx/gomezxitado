@@ -2,7 +2,8 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO
     Interface Premium com Layout Horizontal
-    COM BOTÃO FLUTUANTE PARA ABRIR/FECHAR
+    BOTÃO PRETO NO CANTO SUPERIOR DIREITO
+    ABRE AUTOMATICAMENTE AO EXECUTAR
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -109,93 +110,109 @@ function ClockSystem:Update()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. BOTÃO FLUTUANTE (Toggle Button)
+-- 4. BOTÃO FLUTUANTE (Toggle Button) - PRETO NO CANTO SUPERIOR DIREITO
 -- ═══════════════════════════════════════════════════════════════
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-ToggleButton.Position = UDim2.new(0, 20, 0.5, -25)
-ToggleButton.BackgroundColor3 = Theme.Accent
-ToggleButton.BackgroundTransparency = 0
-ToggleButton.Text = "▶"
-ToggleButton.TextColor3 = Theme.Background
-ToggleButton.TextSize = 20
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Parent = MainGui
+-- Criar o ScreenGui para o botão
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "ToggleGUI"
+ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ToggleGui.ResetOnSpawn = false
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+-- Botão flutuante
+local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 36, 0, 36)
+ToggleButton.Position = UDim2.new(1, -52, 0, 8) -- Ao lado da engrenagem
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35) -- Preto acinzentado
+ToggleButton.BackgroundTransparency = 0
+ToggleButton.Image = "rbxassetid://6031091079" -- Ícone de engrenagem/menu
+ToggleButton.ImageColor3 = Color3.fromRGB(200, 200, 210)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Parent = ToggleGui
+
+-- Corner do botão
 local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
 -- Sombra do botão
 local ToggleShadow = Instance.new("Frame")
 ToggleShadow.Name = "Shadow"
-ToggleShadow.Size = UDim2.new(1, 10, 1, 10)
-ToggleShadow.Position = UDim2.new(0, -5, 0, -5)
+ToggleShadow.Size = UDim2.new(1, 8, 1, 8)
+ToggleShadow.Position = UDim2.new(0, -4, 0, -4)
 ToggleShadow.BackgroundColor3 = Theme.Shadow
-ToggleShadow.BackgroundTransparency = 0.5
+ToggleShadow.BackgroundTransparency = 0.4
 ToggleShadow.BorderSizePixel = 0
 ToggleShadow.Parent = ToggleButton
 
 local ToggleShadowCorner = Instance.new("UICorner")
-ToggleShadowCorner.CornerRadius = UDim.new(1, 0)
+ToggleShadowCorner.CornerRadius = UDim.new(0, 10)
 ToggleShadowCorner.Parent = ToggleShadow
 
 -- Efeitos do botão
 ToggleButton.MouseEnter:Connect(function()
     TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
-        Size = UDim2.new(0, 55, 0, 55),
-        BackgroundColor3 = Theme.AccentHover
+        Size = UDim2.new(0, 38, 0, 38),
+        BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     }):Play()
 end)
 
 ToggleButton.MouseLeave:Connect(function()
     TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
-        Size = UDim2.new(0, 50, 0, 50),
-        BackgroundColor3 = Theme.Accent
+        Size = UDim2.new(0, 36, 0, 36),
+        BackgroundColor3 = Color3.fromRGB(30, 30, 35)
     }):Play()
 end)
 
--- Função para arrastar o botão
-local isDragging = false
-local dragStart = Vector2.new()
-local buttonStartPos = UDim2.new()
+-- Tooltip ao passar o mouse
+local Tooltip = Instance.new("TextLabel")
+Tooltip.Name = "Tooltip"
+Tooltip.Size = UDim2.new(0, 120, 0, 28)
+Tooltip.Position = UDim2.new(0, -130, 0.5, -14)
+Tooltip.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+Tooltip.BackgroundTransparency = 0.9
+Tooltip.Text = "Car Flipper"
+Tooltip.TextColor3 = Color3.fromRGB(220, 220, 230)
+Tooltip.TextSize = 12
+Tooltip.Font = Enum.Font.GothamMedium
+Tooltip.TextXAlignment = Enum.TextXAlignment.Center
+Tooltip.TextYAlignment = Enum.TextYAlignment.Center
+Tooltip.BorderSizePixel = 0
+Tooltip.Visible = false
+Tooltip.Parent = ToggleButton
 
-ToggleButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDragging = true
-        dragStart = input.Position
-        buttonStartPos = ToggleButton.Position
-    end
+local TooltipCorner = Instance.new("UICorner")
+TooltipCorner.CornerRadius = UDim.new(0, 6)
+TooltipCorner.Parent = Tooltip
+
+ToggleButton.MouseEnter:Connect(function()
+    Tooltip.Visible = true
+    TweenService:Create(Tooltip, TweenInfo.new(0.2), {
+        BackgroundTransparency = 0.85
+    }):Play()
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and isDragging then
-        isDragging = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        local newX = buttonStartPos.X.Offset + delta.X
-        local newY = buttonStartPos.Y.Offset + delta.Y
-        
-        -- Limitar para não sair da tela
-        newX = math.max(10, math.min(newX, 100))
-        newY = math.max(10, math.min(newY, 200))
-        
-        ToggleButton.Position = UDim2.new(0, newX, 0, newY)
-    end
+ToggleButton.MouseLeave:Connect(function()
+    TweenService:Create(Tooltip, TweenInfo.new(0.2), {
+        BackgroundTransparency = 0.9
+    }):Play()
+    task.wait(0.2)
+    Tooltip.Visible = false
 end)
 
 -- ═══════════════════════════════════════════════════════════════
 -- 5. CRIAÇÃO DA INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
 
--- 5.1 MainFrame
+-- 5.1 ScreenGui Principal
+local MainGui = Instance.new("ScreenGui")
+MainGui.Name = "CarFlipperGUI"
+MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+MainGui.ResetOnSpawn = false
+
+-- 5.2 MainFrame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 920, 0, 560)
@@ -204,7 +221,7 @@ MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = MainGui
-MainFrame.Visible = false -- Começa escondido
+MainFrame.Visible = true -- Começa visível (abre automaticamente)
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
@@ -578,7 +595,7 @@ end)
 -- 13. FUNÇÕES DE ABRIR/FECHAR
 -- ═══════════════════════════════════════════════════════════════
 
-local isOpen = false
+local isOpen = true -- Começa aberto
 local toggleAnimating = false
 
 function ToggleGUI()
@@ -598,13 +615,13 @@ function ToggleGUI()
             Position = UDim2.new(0.5, -460, 0.5, -280)
         }):Play()
         
-        ToggleButton.Text = "◀"
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
-            BackgroundColor3 = Theme.Danger
-        }):Play()
-        
         ClockSystem.isRunning = true
         CarFlipperAPI.RefreshClock()
+        
+        -- Mudar ícone do botão
+        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
+            ImageColor3 = Color3.fromRGB(200, 200, 210)
+        }):Play()
         
     else
         -- Fechar
@@ -613,12 +630,12 @@ function ToggleGUI()
             Position = UDim2.new(0.5, -460, 0.5, 0)
         }):Play()
         
-        ToggleButton.Text = "▶"
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
-            BackgroundColor3 = Theme.Accent
-        }):Play()
-        
         ClockSystem.isRunning = false
+        
+        -- Mudar ícone do botão para indicar que está fechado
+        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
+            ImageColor3 = Color3.fromRGB(150, 150, 160)
+        }):Play()
         
         task.wait(0.3)
         MainFrame.Visible = false
@@ -719,13 +736,24 @@ _G.CarFlipper = CarFlipperAPI
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado com sucesso!")
-print("📌 Botão flutuante para abrir/fechar (▶/◀)")
-print("🕐 Sistema de relógio em tempo real ativo")
+print("📌 Botão preto no canto superior direito (ao lado da engrenagem)")
+print("🔄 Interface abre automaticamente ao executar")
+print("📌 Clique no botão para abrir/fechar")
 print("📌 Use _G.CarFlipper para controlar a interface")
 
 CarFlipperAPI.SetStatus("[Car Flipper] Aguardando ações...")
 CarFlipperAPI.RefreshClock()
 
--- Iniciar com a interface fechada
-MainFrame.Visible = false
-ToggleButton.Text = "▶"
+-- A interface já está visível (isOpen = true)
+
+-- Animação de entrada ao iniciar
+task.wait(0.1)
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+task.wait(0.1)
+
+TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 920, 0, 560),
+    Position = UDim2.new(0.5, -460, 0.5, -280)
+}):Play()
