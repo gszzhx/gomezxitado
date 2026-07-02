@@ -1,7 +1,6 @@
 --[[
-    Car Flipper - Painel Completo com Developer Console
-    Todas as abas: Log, Information, Warning, Error, Memory
-    Versão 7.0 - UI Completa com Console
+    Car Flipper - Painel Completo com Correção de Erros
+    Versão 8.0 - Resolve "attempt to call a nil value"
 ]]
 
 -- ============================================================
@@ -22,7 +21,47 @@ repeat task.wait() until Player and Player.Character and Player.Character:FindFi
 print("🚗 Car Flipper Painel Completo Iniciando...")
 
 -- ============================================================
--- 2. VARIÁVEIS GLOBAIS
+-- 2. FIX: CORREÇÃO DO ERRO "attempt to call a nil value"
+-- ============================================================
+
+-- Esta função substitui chamadas nil com segurança
+local function SafeCall(func, ...)
+    local success, result = pcall(func, ...)
+    if not success then
+        warn("⚠️ Erro capturado: " .. tostring(result))
+        AddLog("⚠️ Erro: " .. tostring(result), "Error")
+        return nil
+    end
+    return result
+end
+
+-- Sobrescreve funções problemáticas
+local originalFireServer = nil
+
+-- Patch seguro para RemoteEvents
+local function SafeFireServer(remote, ...)
+    if not remote then 
+        AddLog("⚠️ RemoteEvent não encontrado", "Warning")
+        return false 
+    end
+    if not remote:IsA("RemoteEvent") then 
+        AddLog("⚠️ Objeto não é um RemoteEvent", "Warning")
+        return false 
+    end
+    
+    local success, result = pcall(function()
+        remote:FireServer(...)
+    end)
+    
+    if not success then
+        AddLog("❌ Erro ao executar: " .. tostring(result), "Error")
+        return false
+    end
+    return true
+end
+
+-- ============================================================
+-- 3. VARIÁVEIS GLOBAIS
 -- ============================================================
 
 local isRunning = false
@@ -30,10 +69,10 @@ local autoFarmActive = false
 local currentAction = "Idle"
 local logEntries = {}
 local consoleLines = {}
-local consoleMode = "Log" -- Log, Information, Warning, Error, Memory
+local consoleMode = "Log"
 
 -- ============================================================
--- 3. CRIAR UI PRINCIPAL
+-- 4. CRIAR UI PRINCIPAL
 -- ============================================================
 
 local function CreateCarFlipperUI()
@@ -44,7 +83,7 @@ local function CreateCarFlipperUI()
     ScreenGui.Parent = Player.PlayerGui
     
     -- ============================================================
-    -- 4. JANELA PRINCIPAL
+    -- 5. JANELA PRINCIPAL
     -- ============================================================
     
     local MainFrame = Instance.new("Frame")
@@ -87,7 +126,7 @@ local function CreateCarFlipperUI()
     ShadowCorner.Parent = Shadow
     
     -- ============================================================
-    -- 5. HEADER COM INFO DO JOGO
+    -- 6. HEADER COM INFO DO JOGO
     -- ============================================================
     
     local Header = Instance.new("Frame")
@@ -103,7 +142,7 @@ local function CreateCarFlipperUI()
     
     -- Título
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(0.4, 0, 0.5, 0)
+    Title.Size = UDim2.new(0.35, 0, 0.5, 0)
     Title.Position = UDim2.new(0, 16, 0, 4)
     Title.BackgroundTransparency = 1
     Title.Text = "🚗 Car Flipper"
@@ -115,8 +154,8 @@ local function CreateCarFlipperUI()
     
     -- Money
     local MoneyLabel = Instance.new("TextLabel")
-    MoneyLabel.Size = UDim2.new(0.4, 0, 0.5, 0)
-    MoneyLabel.Position = UDim2.new(0.4, 0, 0, 4)
+    MoneyLabel.Size = UDim2.new(0.35, 0, 0.5, 0)
+    MoneyLabel.Position = UDim2.new(0.35, 0, 0, 4)
     MoneyLabel.BackgroundTransparency = 1
     MoneyLabel.Text = "💰 1,522,964$"
     MoneyLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
@@ -125,12 +164,24 @@ local function CreateCarFlipperUI()
     MoneyLabel.TextXAlignment = Enum.TextXAlignment.Right
     MoneyLabel.Parent = Header
     
+    -- Memory Usage
+    local MemoryLabel = Instance.new("TextLabel")
+    MemoryLabel.Size = UDim2.new(0.25, 0, 0.5, 0)
+    MemoryLabel.Position = UDim2.new(0.7, 0, 0, 4)
+    MemoryLabel.BackgroundTransparency = 1
+    MemoryLabel.Text = "📊 648 MB"
+    MemoryLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+    MemoryLabel.TextSize = 12
+    MemoryLabel.Font = Enum.Font.Poppins
+    MemoryLabel.TextXAlignment = Enum.TextXAlignment.Right
+    MemoryLabel.Parent = Header
+    
     -- Status do sistema
     local SysStatus = Instance.new("TextLabel")
     SysStatus.Size = UDim2.new(0.5, 0, 0.4, 0)
     SysStatus.Position = UDim2.new(0, 16, 0, 32)
     SysStatus.BackgroundTransparency = 1
-    SysStatus.Text = "[SYSTEM] ONLINE"
+    SysStatus.Text = "[SYSTEM] AUCTION STARTED"
     SysStatus.TextColor3 = Color3.fromRGB(34, 197, 94)
     SysStatus.TextSize = 11
     SysStatus.Font = Enum.Font.Poppins
@@ -139,8 +190,8 @@ local function CreateCarFlipperUI()
     
     -- Player
     local PlayerLabel = Instance.new("TextLabel")
-    PlayerLabel.Size = UDim2.new(0.3, 0, 0.4, 0)
-    PlayerLabel.Position = UDim2.new(0.7, 0, 0, 32)
+    PlayerLabel.Size = UDim2.new(0.4, 0, 0.4, 0)
+    PlayerLabel.Position = UDim2.new(0.6, 0, 0, 32)
     PlayerLabel.BackgroundTransparency = 1
     PlayerLabel.Text = "👤 " .. Player.Name
     PlayerLabel.TextColor3 = Color3.fromRGB(180, 200, 240)
@@ -175,7 +226,7 @@ local function CreateCarFlipperUI()
     local closeBtn = CreateControlButton("✕", 60, Color3.fromRGB(255, 80, 80))
     
     -- ============================================================
-    -- 6. STATUS BAR
+    -- 7. STATUS BAR
     -- ============================================================
     
     local StatusBar = Instance.new("Frame")
@@ -222,7 +273,7 @@ local function CreateCarFlipperUI()
     StatusText.Size = UDim2.new(0.6, 0, 1, 0)
     StatusText.Position = UDim2.new(0, 28, 0, 0)
     StatusText.BackgroundTransparency = 1
-    StatusText.Text = "[SYSTEM] Pronto"
+    StatusText.Text = "[SYSTEM] AUCTION STARTED"
     StatusText.TextColor3 = Color3.fromRGB(180, 200, 240)
     StatusText.TextSize = 11
     StatusText.Font = Enum.Font.Poppins
@@ -243,7 +294,7 @@ local function CreateCarFlipperUI()
     ExtraInfo.Parent = StatusBar
     
     -- ============================================================
-    -- 7. TABS (Auto / Run Once / Console)
+    -- 8. TABS
     -- ============================================================
     
     local TabContainer = Instance.new("Frame")
@@ -310,7 +361,7 @@ local function CreateCarFlipperUI()
     end)
     
     -- ============================================================
-    -- 8. CONTEÚDO
+    -- 9. CONTEÚDO
     -- ============================================================
     
     local ContentFrame = Instance.new("Frame")
@@ -340,7 +391,7 @@ local function CreateCarFlipperUI()
     ContentLayout.Parent = Scrolling
     
     -- ============================================================
-    -- 9. CONSOLE (Developer Console)
+    -- 10. CONSOLE COMPLETO
     -- ============================================================
     
     local ConsoleFrame = Instance.new("Frame")
@@ -364,10 +415,10 @@ local function CreateCarFlipperUI()
     ConsoleHeader.Parent = ConsoleFrame
     
     local ConsoleTitle = Instance.new("TextLabel")
-    ConsoleTitle.Size = UDim2.new(0.3, 0, 1, 0)
+    ConsoleTitle.Size = UDim2.new(0.2, 0, 1, 0)
     ConsoleTitle.Position = UDim2.new(0, 12, 0, 0)
     ConsoleTitle.BackgroundTransparency = 1
-    ConsoleTitle.Text = "📟 Developer Console"
+    ConsoleTitle.Text = "📟 Console"
     ConsoleTitle.TextColor3 = Color3.fromRGB(200, 215, 245)
     ConsoleTitle.TextSize = 12
     ConsoleTitle.Font = Enum.Font.Poppins
@@ -376,8 +427,8 @@ local function CreateCarFlipperUI()
     
     -- Abas do console
     local ConsoleTabs = Instance.new("Frame")
-    ConsoleTabs.Size = UDim2.new(0.5, 0, 1, 0)
-    ConsoleTabs.Position = UDim2.new(0.35, 0, 0, 0)
+    ConsoleTabs.Size = UDim2.new(0.6, 0, 1, 0)
+    ConsoleTabs.Position = UDim2.new(0.25, 0, 0, 0)
     ConsoleTabs.BackgroundTransparency = 1
     ConsoleTabs.Parent = ConsoleHeader
     
@@ -387,18 +438,18 @@ local function CreateCarFlipperUI()
     
     for i, name in ipairs(consoleTabNames) do
         local tab = Instance.new("TextButton")
-        tab.Size = UDim2.new(0, 60, 1, 0)
-        tab.Position = UDim2.new(0, (i-1) * 65, 0, 0)
+        tab.Size = UDim2.new(0, 55, 1, 0)
+        tab.Position = UDim2.new(0, (i-1) * 60, 0, 0)
         tab.BackgroundTransparency = 1
         tab.Text = name
         tab.TextColor3 = i == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(128, 140, 180)
-        tab.TextSize = 11
+        tab.TextSize = 10
         tab.Font = Enum.Font.Poppins
         tab.Parent = ConsoleTabs
         
         local underline = Instance.new("Frame")
-        underline.Size = UDim2.new(0, 40, 0, 2)
-        underline.Position = UDim2.new(0.5, -20, 1, -2)
+        underline.Size = UDim2.new(0, 35, 0, 2)
+        underline.Position = UDim2.new(0.5, -17, 1, -2)
         underline.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
         underline.BackgroundTransparency = i == 1 and 0 or 1
         underline.BorderSizePixel = 0
@@ -458,7 +509,7 @@ local function CreateCarFlipperUI()
     ConsoleList.Parent = ConsoleContainer
     
     -- ============================================================
-    -- 10. FUNÇÃO DE LOG
+    -- 11. FUNÇÃO DE LOG
     -- ============================================================
     
     function AddLog(message, logType)
@@ -481,7 +532,6 @@ local function CreateCarFlipperUI()
     end
     
     function UpdateConsole()
-        -- Limpar container
         for _, child in pairs(ConsoleContainer:GetChildren()) do
             if child:IsA("TextLabel") then
                 child:Destroy()
@@ -516,7 +566,7 @@ local function CreateCarFlipperUI()
     end
     
     -- ============================================================
-    -- 11. CRIAR SEÇÕES
+    -- 12. CRIAR SEÇÕES
     -- ============================================================
     
     local function CreateSection(title, icon, layoutOrder)
@@ -553,7 +603,7 @@ local function CreateCarFlipperUI()
     end
     
     -- ============================================================
-    -- 12. TOGGLE ROW COMPLETA
+    -- 13. TOGGLE ROW
     -- ============================================================
     
     local function AddToggleRow(parent, icon, title, subtitle, defaultActive, isGreen)
@@ -635,7 +685,7 @@ local function CreateCarFlipperUI()
     end
     
     -- ============================================================
-    -- 13. FUNÇÕES DE AÇÃO
+    -- 14. FUNÇÕES DE AÇÃO (COM SEGURANÇA)
     -- ============================================================
     
     function ExecuteAction(action)
@@ -644,98 +694,55 @@ local function CreateCarFlipperUI()
         DotGlow.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
         currentAction = action
         
-        -- Mapeamento de ações
+        -- Mapeamento de ações com nomes alternativos
         local actionMap = {
-            ["Claim Cash"] = {"ClaimCash", "CashClaim", "CollectCash"},
-            ["Claim Parts"] = {"ClaimParts", "PartsClaim", "CollectParts"},
-            ["Buy Upgrades"] = {"BuyUpgrade", "Upgrade", "PurchaseUpgrade"},
-            ["Claim Containers"] = {"ClaimContainer", "ContainerClaim", "OpenContainer"},
-            ["Open Containers"] = {"OpenContainer", "ContainerOpen"},
-            ["Claim Quests"] = {"ClaimQuest", "QuestClaim", "CompleteQuest"},
-            ["Deliver Junk"] = {"DeliverJunk", "JunkDeliver", "SellJunk"},
-            ["Fix Cars"] = {"FixCar", "RepairCar", "CarFix"},
-            ["Sell Fixed Cars"] = {"SellCar", "CarSell", "SellFixed"},
-            ["Update Stands"] = {"UpdateStand", "StandUpdate", "RefreshStand"},
-            ["Buy, Fix, Sell Cheapest"] = {"BuyFixSell", "AutoFlip", "CheapestFlip"},
-            ["Claim Playtime Rewards"] = {"ClaimPlaytime", "PlaytimeReward"},
-            ["Claim Daily Rewards"] = {"ClaimDaily", "DailyReward"},
-            ["Auction Auto-Bid"] = {"AutoBid", "AuctionBid", "PlaceBid"},
-            ["Collect All"] = {"CollectAll", "CollectEverything"},
-            ["Auto Sell Legendary"] = {"SellLegendary", "AutoSellLegendary"},
+            ["Claim Cash"] = {"ClaimCash", "CashClaim", "CollectCash", "Claim_Money"},
+            ["Claim Parts"] = {"ClaimParts", "PartsClaim", "CollectParts", "Claim_Parts"},
+            ["Buy Upgrades"] = {"BuyUpgrade", "Upgrade", "PurchaseUpgrade", "Buy_Upgrade"},
+            ["Claim Containers"] = {"ClaimContainer", "ContainerClaim", "OpenContainer", "Claim_Container"},
+            ["Open Containers"] = {"OpenContainer", "ContainerOpen", "Open_Container"},
+            ["Claim Quests"] = {"ClaimQuest", "QuestClaim", "CompleteQuest", "Claim_Quest"},
+            ["Deliver Junk"] = {"DeliverJunk", "JunkDeliver", "SellJunk", "Deliver_Junk"},
+            ["Fix Cars"] = {"FixCar", "RepairCar", "CarFix", "Fix_Car"},
+            ["Sell Fixed Cars"] = {"SellCar", "CarSell", "SellFixed", "Sell_Car"},
+            ["Update Stands"] = {"UpdateStand", "StandUpdate", "RefreshStand", "Update_Stand"},
+            ["Buy, Fix, Sell Cheapest"] = {"BuyFixSell", "AutoFlip", "CheapestFlip", "Auto_Sell"},
+            ["Claim Playtime Rewards"] = {"ClaimPlaytime", "PlaytimeReward", "Claim_Playtime"},
+            ["Claim Daily Rewards"] = {"ClaimDaily", "DailyReward", "Claim_Daily"},
+            ["Auction Auto-Bid"] = {"AutoBid", "AuctionBid", "PlaceBid", "Auto_Bid"},
+            ["Collect All"] = {"CollectAll", "CollectEverything", "Collect_All"},
+            ["Auto Sell Legendary"] = {"SellLegendary", "AutoSellLegendary", "Sell_Legendary"},
+            ["SWIZ acquired"] = {"SWIZ", "AcquireSWIZ", "SWIZ_Acquire"},
+            ["Common container"] = {"CommonContainer", "Container_Common"},
+            ["Upgrading your base"] = {"UpgradeBase", "BaseUpgrade", "Upgrade_Base"},
         }
         
-        local remoteNames = actionMap[action] or {action:gsub(" ", "")}
+        local remoteNames = actionMap[action] or {action:gsub(" ", ""), action}
         local executed = false
         
+        -- Primeiro tenta encontrar RemoteEvents no ReplicatedStorage
         for _, remoteName in ipairs(remoteNames) do
             local remote = ReplicatedStorage:FindFirstChild(remoteName)
-            if remote and remote:IsA("RemoteEvent") then
-                remote:FireServer()
-                executed = true
-                AddLog("✅ " .. action .. " executado via " .. remoteName, "Log")
-                break
-            end
-        end
-        
-        if not executed then
-            for _, child in pairs(ReplicatedStorage:GetChildren()) do
-                if child:IsA("RemoteEvent") then
-                    local nameLower = child.Name:lower()
-                    local actionLower = action:lower():gsub(" ", "")
-                    if nameLower:find(actionLower) or actionLower:find(nameLower) then
-                        child:FireServer()
+            if remote then
+                if remote:IsA("RemoteEvent") then
+                    local success = SafeFireServer(remote)
+                    if success then
                         executed = true
-                        AddLog("✅ " .. action .. " executado via " .. child.Name, "Log")
+                        AddLog("✅ " .. action .. " executado via " .. remoteName, "Information")
+                        break
+                    end
+                elseif remote:IsA("BindableEvent") then
+                    -- Tentar BindableEvents também
+                    local success, result = pcall(function()
+                        remote:Fire()
+                    end)
+                    if success then
+                        executed = true
+                        AddLog("✅ " .. action .. " executado via " .. remoteName, "Information")
                         break
                     end
                 end
             end
         end
         
-        if not executed then
-            AddLog("⚠️ Ação não encontrada: " .. action, "Warning")
-            StatusText.Text = "[SYSTEM] Ação não disponível: " .. action
-            task.wait(1)
-        end
-        
-        task.wait(1.5)
-        StatusText.Text = "[SYSTEM] Pronto"
-        StatusDot.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
-        DotGlow.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
-    end
-    
-    -- ============================================================
-    -- 14. FUNÇÃO DE TROCA DE ABAS
-    -- ============================================================
-    
-    function ShowContent(mode)
-        if mode == "Console" then
-            Scrolling.Visible = false
-            ConsoleFrame.Visible = true
-            UpdateConsole()
-        else
-            Scrolling.Visible = true
-            ConsoleFrame.Visible = false
-        end
-    end
-    
-    -- ============================================================
-    -- 15. CONSTRUIR TODAS AS SEÇÕES
-    -- ============================================================
-    
-    -- ===== BASE =====
-    local baseSection, baseContainer = CreateSection("Base", "🏢", 1)
-    AddToggleRow(baseContainer, "💰", "Claim Cash", "Coletar dinheiro automático", true, true)
-    AddToggleRow(baseContainer, "🧩", "Claim Parts", "Coletar peças", true)
-    AddToggleRow(baseContainer, "⬆️", "Buy Upgrades", "Comprar melhorias", false)
-    AddToggleRow(baseContainer, "📦", "Claim Containers", "Abrir containers", true, true)
-    AddToggleRow(baseContainer, "🎁", "Open Containers", "Revelar recompensas", false)
-    AddToggleRow(baseContainer, "📋", "Claim Quests", "Recompensas de missões", true)
-    AddToggleRow(baseContainer, "🗑️", "Deliver Junk", "Vender sucata", false)
-    
-    -- ===== CARS =====
-    local carsSection, carsContainer = CreateSection("Cars", "🚗", 2)
-    AddToggleRow(carsContainer, "🔧", "Fix Cars", "Reparar veículos", true)
-    AddToggleRow(carsContainer, "💲", "Sell Fixed Cars", "Vender reparados", true, true)
-    AddToggleRow(carsContainer, "🔄", "Update Stands", "Atualizar vitrines", false)
-    AddToggleRow(carsContainer, "🏷️", "Buy, Fix,
+        -- Se não encontrou, tentar procurar em
