@@ -2,7 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM CASH COMPLETO
     Busca automática pelo prompt/botão "Dinheiro Coletar" + Coleta automática
-    VERSÃO CORRIGIDA
+    VERSÃO CORRIGIDA COM INPUT EDITÁVEL
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -22,9 +22,6 @@ local HttpService = game:GetService("HttpService")
 -- ═══════════════════════════════════════════════════════════════
 
 -- Palavra-chave principal: o texto "Dinheiro" que aparece no topo do prompt
--- (ObjectText do ProximityPrompt do cofre, visto na sua imagem).
--- "Coletar"/"collect" NÃO entram aqui de propósito, porque são genéricos
--- demais e podem bater em outros botões do jogo (Claim Parts, Quests, etc).
 local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money"}
 
 -- ═══════════════════════════════════════════════════════════════
@@ -51,16 +48,14 @@ local Theme = {
     SliderFill = Color3.fromRGB(255, 200, 50),
     SliderThumb = Color3.fromRGB(255, 215, 75),
     Green = Color3.fromRGB(50, 220, 100),
+    InputBG = Color3.fromRGB(25, 25, 35),
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. DECLARAÇÕES ANTECIPADAS (evita erro de "nil value")
+-- 4. DECLARAÇÕES ANTECIPADAS
 -- ═══════════════════════════════════════════════════════════════
--- StatusLabel só é criado lá na seção 11 (interface), mas as funções
--- de Claim Cash (seção 6) precisam chamar UpdateStatus antes disso.
--- Por isso declaramos as duas ANTES de qualquer função usá-las.
 
-local StatusLabel -- será atribuído na seção 11, sem "local" de novo
+local StatusLabel
 
 local function UpdateStatus(text)
     if StatusLabel then
@@ -77,7 +72,7 @@ local ClaimCash = {
     interval = 5, -- segundos
     task = nil,
     isRunning = false,
-    collectRadius = 10, -- Raio para detectar dinheiro (fallback por objetos)
+    collectRadius = 10,
 }
 
 -- Verifica se um texto bate com alguma palavra-chave de dinheiro
@@ -96,7 +91,6 @@ end
 -- 6. FUNÇÕES DE COLETA DE DINHEIRO
 -- ═══════════════════════════════════════════════════════════════
 
--- Função para encontrar e coletar dinheiro
 local function FindAndCollectCash()
     local character = LocalPlayer.Character
     if not character then return false end
@@ -107,7 +101,6 @@ local function FindAndCollectCash()
     local collected = false
     local cashObjects = {}
 
-    -- Procurar por objetos de dinheiro no workspace
     for _, obj in ipairs(workspace:GetDescendants()) do
         local isCash = false
         local objName = obj.Name:lower()
@@ -230,10 +223,6 @@ local function FindAndCollectCash()
     return collected
 end
 
--- Procura no workspace o ProximityPrompt de coleta de dinheiro
--- (o "E  Dinheiro / Coletar" que aparece perto do cofre)
--- Prioriza o ObjectText ("Dinheiro"), que é o texto específico do dinheiro,
--- e só olha o ActionText como reforço (não usa "Coletar" sozinho).
 local function FindMoneyPrompt()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") then
@@ -242,7 +231,6 @@ local function FindMoneyPrompt()
             end
         end
     end
-    -- Se nenhum prompt tiver "Dinheiro" no ObjectText, tenta pelo ActionText também
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") and MatchesMoneyKeyword(obj.ActionText) then
             return obj
@@ -251,7 +239,6 @@ local function FindMoneyPrompt()
     return nil
 end
 
--- Procura na PlayerGui um botão "COLETAR" (o botão verde da interface)
 local function FindMoneyButton()
     local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
@@ -263,7 +250,6 @@ local function FindMoneyButton()
                     if MatchesMoneyKeyword(btn.Text) then
                         return btn
                     end
-                    -- Às vezes o texto fica num TextLabel filho, não no próprio botão
                     for _, child in ipairs(btn:GetDescendants()) do
                         if child:IsA("TextLabel") and MatchesMoneyKeyword(child.Text) then
                             return btn
@@ -276,7 +262,6 @@ local function FindMoneyButton()
     return nil
 end
 
--- Vai até a peça/modelo dono do ProximityPrompt
 local function GoToPrompt(prompt)
     local character = LocalPlayer.Character
     if not character then return false end
@@ -300,14 +285,11 @@ local function GoToPrompt(prompt)
     return true
 end
 
--- Ativa o ProximityPrompt (com ou sem função de exploit disponível)
 local function TriggerPrompt(prompt)
     return pcall(function()
         if typeof(fireproximityprompt) == "function" then
-            -- Função disponível em vários executores: ativa o prompt na hora
             fireproximityprompt(prompt)
         else
-            -- Fallback: segura e solta o prompt manualmente
             prompt:InputHold()
             task.wait(0.15)
             prompt:InputRelease()
@@ -315,13 +297,11 @@ local function TriggerPrompt(prompt)
     end)
 end
 
--- Coletar dinheiro (tenta prompt -> botão de GUI -> objetos soltos no mapa)
 local function CollectCash()
     if not ClaimCash.enabled then return false end
 
     UpdateStatus("[Car Flipper] Procurando o dinheiro...")
 
-    -- 1) Tenta achar o ProximityPrompt "Dinheiro / Coletar"
     local prompt = FindMoneyPrompt()
     if prompt then
         GoToPrompt(prompt)
@@ -333,7 +313,6 @@ local function CollectCash()
         end
     end
 
-    -- 2) Tenta achar e clicar o botão verde "COLETAR" da interface
     local button = FindMoneyButton()
     if button then
         UpdateStatus("[Car Flipper] Coletando dinheiro (botão)...")
@@ -346,7 +325,6 @@ local function CollectCash()
         end
     end
 
-    -- 3) Fallback antigo: procura objetos soltos no mapa perto do personagem
     local collected = FindAndCollectCash()
     if collected then
         UpdateStatus("[Car Flipper] Dinheiro coletado!")
@@ -357,7 +335,6 @@ local function CollectCash()
     return false
 end
 
--- Loop principal do Claim Cash
 local function ClaimCashLoop()
     while ClaimCash.enabled and ClaimCash.isRunning do
         local collectSuccess = false
@@ -372,7 +349,7 @@ local function ClaimCashLoop()
         end
 
         local waitTime = ClaimCash.interval
-        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f ms", waitTime * 1000))
+        UpdateStatus(string.format("[Car Flipper] Próxima coleta em %.1f s", waitTime))
 
         local startTime = tick()
         while ClaimCash.enabled and ClaimCash.isRunning and (tick() - startTime) < waitTime do
@@ -386,7 +363,6 @@ local function ClaimCashLoop()
     end
 end
 
--- Iniciar Claim Cash
 local function StartClaimCash()
     if ClaimCash.isRunning then return end
     if not ClaimCash.enabled then return end
@@ -397,7 +373,6 @@ local function StartClaimCash()
     ClaimCash.task = task.spawn(ClaimCashLoop)
 end
 
--- Parar Claim Cash
 local function StopClaimCash()
     ClaimCash.enabled = false
     ClaimCash.isRunning = false
@@ -410,7 +385,6 @@ local function StopClaimCash()
     UpdateStatus("[Car Flipper] Claim Cash parado")
 end
 
--- Alternar Claim Cash
 local function ToggleClaimCash()
     ClaimCash.enabled = not ClaimCash.enabled
 
@@ -588,9 +562,6 @@ AutoTabCorner.Parent = AutoTab
 -- 12. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
--- ATENÇÃO: sem "local" aqui, pois StatusLabel já foi declarada
--- (como local vazia) lá na seção 4. Isso garante que UpdateStatus
--- enxergue o mesmo objeto.
 StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
@@ -623,7 +594,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. CHECKBOXES COM SLIDER
+-- 14. CHECKBOXES COM INPUT EDITÁVEL
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -685,11 +656,12 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
     local sliderFill = nil
     local sliderThumb = nil
     local sliderValueText = nil
+    local valueInput = nil
 
     if hasSlider then
         sliderContainer = Instance.new("Frame")
         sliderContainer.Name = "SliderContainer"
-        sliderContainer.Size = UDim2.new(0, 155, 0, 30)
+        sliderContainer.Size = UDim2.new(0, 165, 0, 30)
         sliderContainer.Position = UDim2.new(0, 0, 0, 34)
         sliderContainer.BackgroundColor3 = Theme.SliderBG
         sliderContainer.BackgroundTransparency = 0
@@ -703,7 +675,7 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
 
         local sliderBg = Instance.new("Frame")
         sliderBg.Name = "SliderBg"
-        sliderBg.Size = UDim2.new(1, -10, 0, 4)
+        sliderBg.Size = UDim2.new(0.7, -5, 0, 4)
         sliderBg.Position = UDim2.new(0, 5, 0.5, -2)
         sliderBg.BackgroundColor3 = Theme.SurfaceLight
         sliderBg.BorderSizePixel = 0
@@ -737,22 +709,43 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
         thumbCorner.CornerRadius = UDim.new(1, 0)
         thumbCorner.Parent = sliderThumb
 
-        sliderValueText = Instance.new("TextLabel")
-        sliderValueText.Name = "ValueText"
-        sliderValueText.Size = UDim2.new(0, 50, 1, 0)
-        sliderValueText.Position = UDim2.new(1, 5, 0, 0)
-        sliderValueText.BackgroundTransparency = 1
-        sliderValueText.Text = "5 ms"
-        sliderValueText.TextColor3 = Theme.TextSecondary
-        sliderValueText.TextSize = 11
-        sliderValueText.Font = Enum.Font.GothamMedium
-        sliderValueText.TextXAlignment = Enum.TextXAlignment.Left
-        sliderValueText.TextYAlignment = Enum.TextYAlignment.Center
-        sliderValueText.Parent = sliderContainer
+        -- INPUT EDITÁVEL para valor
+        valueInput = Instance.new("TextBox")
+        valueInput.Name = "ValueInput"
+        valueInput.Size = UDim2.new(0.28, 0, 0.7, 0)
+        valueInput.Position = UDim2.new(0.72, 0, 0.15, 0)
+        valueInput.BackgroundColor3 = Theme.InputBG
+        valueInput.BorderSizePixel = 0
+        valueInput.Text = "5.0"
+        valueInput.TextColor3 = Theme.TextPrimary
+        valueInput.TextSize = 11
+        valueInput.Font = Enum.Font.GothamMedium
+        valueInput.TextXAlignment = Enum.TextXAlignment.Center
+        valueInput.TextYAlignment = Enum.TextYAlignment.Center
+        valueInput.ClearTextOnFocus = false
+        valueInput.Parent = sliderContainer
+
+        local inputCorner = Instance.new("UICorner")
+        inputCorner.CornerRadius = UDim.new(0, 4)
+        inputCorner.Parent = valueInput
+
+        -- Label "s" para segundos
+        local secondsLabel = Instance.new("TextLabel")
+        secondsLabel.Name = "SecondsLabel"
+        secondsLabel.Size = UDim2.new(0, 12, 0.7, 0)
+        secondsLabel.Position = UDim2.new(1, 0, 0.15, 0)
+        secondsLabel.BackgroundTransparency = 1
+        secondsLabel.Text = "s"
+        secondsLabel.TextColor3 = Theme.TextMuted
+        secondsLabel.TextSize = 11
+        secondsLabel.Font = Enum.Font.Gotham
+        secondsLabel.TextXAlignment = Enum.TextXAlignment.Left
+        secondsLabel.TextYAlignment = Enum.TextYAlignment.Center
+        secondsLabel.Parent = sliderContainer
 
         local minValue = 0.3
-        local maxValue = 300
-        local currentValue = 5
+        local maxValue = 5.0
+        local currentValue = 5.0
         local isDraggingSlider = false
 
         local function UpdateSlider(value)
@@ -762,28 +755,27 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             sliderFill.Size = UDim2.new(percent, 0, 1, 0)
             sliderThumb.Position = UDim2.new(percent, -7, 0.5, -7)
 
-            if currentValue >= 1 then
-                sliderValueText.Text = string.format("%.0f ms", currentValue)
-            else
-                sliderValueText.Text = string.format("%.1f ms", currentValue)
-            end
+            -- Arredonda para 1 casa decimal
+            local rounded = math.floor(currentValue * 10 + 0.5) / 10
+            valueInput.Text = string.format("%.1f", rounded)
 
             if name == "ClaimCash" then
-                ClaimCash.interval = currentValue
+                ClaimCash.interval = rounded
             end
         end
 
         local function GetSliderPercent(input)
-            local sliderPos = sliderContainer.AbsolutePosition
-            local sliderSize = sliderContainer.AbsoluteSize.X - 10
+            local sliderPos = sliderBg.AbsolutePosition
+            local sliderSize = sliderBg.AbsoluteSize.X
             local inputPos = input.Position.X
 
-            local percent = (inputPos - sliderPos.X - 5) / sliderSize
+            local percent = (inputPos - sliderPos.X) / sliderSize
             percent = math.max(0, math.min(1, percent))
             return percent
         end
 
-        sliderContainer.InputBegan:Connect(function(input)
+        -- Eventos do slider
+        sliderBg.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or
                input.UserInputType == Enum.UserInputType.Touch then
                 isDraggingSlider = true
@@ -806,6 +798,19 @@ local function CreateCheckboxWithSlider(parent, name, labelText, xPos, yPos, has
             if input.UserInputType == Enum.UserInputType.MouseButton1 or
                input.UserInputType == Enum.UserInputType.Touch then
                 isDraggingSlider = false
+            end
+        end)
+
+        -- Evento do input editável
+        valueInput.FocusLost:Connect(function(enterPressed)
+            local text = valueInput.Text:gsub(",", ".")
+            local num = tonumber(text)
+            
+            if num then
+                num = math.max(minValue, math.min(maxValue, num))
+                UpdateSlider(num)
+            else
+                valueInput.Text = string.format("%.1f", currentValue)
             end
         end)
 
@@ -955,10 +960,6 @@ for i, sectionData in ipairs(SectionsData) do
     divider.BorderSizePixel = 0
     divider.Parent = sectionContainer
 
-    -- Espaço extra entre um item e o próximo (pedido: dar respiro entre
-    -- "Claim Cash" com o slider aberto e "Claim Parts" logo abaixo)
-    local ITEM_SPACING = 10
-
     local yCursor = 48
     for j, item in ipairs(sectionData.items) do
         local hasSlider = false
@@ -972,10 +973,8 @@ for i, sectionData in ipairs(SectionsData) do
         local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
         CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yCursor, hasSlider)
 
-        -- Avança o cursor pela altura REAL do item (70px se tiver slider, 30px se não)
-        -- mais o espaçamento extra, em vez de um passo fixo de 32px que não
-        -- considerava o slider e causava sobreposição.
-        yCursor = yCursor + (hasSlider and 70 or 30) + ITEM_SPACING
+        -- Espaçamento: 70px se tiver slider (abrindo), 30px se não
+        yCursor = yCursor + (hasSlider and 70 or 30) + 10
     end
 
     sectionContainer.Size = UDim2.new(0, sectionWidth, 0, yCursor + 6)
@@ -1157,3 +1156,4 @@ print("✅ Car Flipper - GomezXitado carregado!")
 print("📌 Clique no botão preto para abrir/fechar")
 print("⌨️  Tecla 'J' para abrir/fechar")
 print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
+print("⏱️  Clique no número para ajustar o tempo (0.3s a 5s)")
