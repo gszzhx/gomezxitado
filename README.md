@@ -4,6 +4,7 @@
     Interface Premium com Layout Horizontal
     BOTÃO PRETO NO CANTO SUPERIOR DIREITO
     ABRE AUTOMATICAMENTE AO EXECUTAR
+    USO ILIMITADO - CLIQUE QUANTAS VEZES QUISER
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -130,6 +131,7 @@ ToggleButton.BackgroundTransparency = 0
 ToggleButton.Image = "rbxassetid://6031091079" -- Ícone de engrenagem/menu
 ToggleButton.ImageColor3 = Color3.fromRGB(200, 200, 210)
 ToggleButton.BorderSizePixel = 0
+ToggleButton.AutoButtonColor = false -- Impede o escurecimento automático
 ToggleButton.Parent = ToggleGui
 
 -- Corner do botão
@@ -151,7 +153,7 @@ local ToggleShadowCorner = Instance.new("UICorner")
 ToggleShadowCorner.CornerRadius = UDim.new(0, 10)
 ToggleShadowCorner.Parent = ToggleShadow
 
--- Efeitos do botão
+-- Efeitos do botão (hover)
 ToggleButton.MouseEnter:Connect(function()
     TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
         Size = UDim2.new(0, 38, 0, 38),
@@ -163,6 +165,19 @@ ToggleButton.MouseLeave:Connect(function()
     TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
         Size = UDim2.new(0, 36, 0, 36),
         BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    }):Play()
+end)
+
+-- Efeito de clique (feedback visual)
+ToggleButton.MouseButton1Down:Connect(function()
+    TweenService:Create(ToggleButton, TweenInfo.new(0.1), {
+        Size = UDim2.new(0, 32, 0, 32)
+    }):Play()
+end)
+
+ToggleButton.MouseButton1Up:Connect(function()
+    TweenService:Create(ToggleButton, TweenInfo.new(0.1), {
+        Size = UDim2.new(0, 36, 0, 36)
     }):Play()
 end)
 
@@ -187,6 +202,7 @@ local TooltipCorner = Instance.new("UICorner")
 TooltipCorner.CornerRadius = UDim.new(0, 6)
 TooltipCorner.Parent = Tooltip
 
+-- Controlar visibilidade do tooltip
 ToggleButton.MouseEnter:Connect(function()
     Tooltip.Visible = true
     TweenService:Create(Tooltip, TweenInfo.new(0.2), {
@@ -592,20 +608,28 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. FUNÇÕES DE ABRIR/FECHAR
+-- 13. FUNÇÕES DE ABRIR/FECHAR (USO ILIMITADO)
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true -- Começa aberto
 local toggleAnimating = false
+local toggleCount = 0 -- Contador de cliques (apenas para debug)
 
 function ToggleGUI()
-    if toggleAnimating then return end
+    if toggleAnimating then 
+        print("⏳ Aguarde a animação terminar...")
+        return 
+    end
+    
     toggleAnimating = true
+    toggleCount = toggleCount + 1
     
     isOpen = not isOpen
     
     if isOpen then
-        -- Abrir
+        -- ABRIR
+        print("🟢 Abrindo interface (clique #" .. toggleCount .. ")")
+        
         MainFrame.Visible = true
         MainFrame.Size = UDim2.new(0, 920, 0, 0)
         MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
@@ -618,13 +642,18 @@ function ToggleGUI()
         ClockSystem.isRunning = true
         CarFlipperAPI.RefreshClock()
         
-        -- Mudar ícone do botão
+        -- Mudar ícone do botão (mais claro = aberto)
         TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
             ImageColor3 = Color3.fromRGB(200, 200, 210)
         }):Play()
         
+        -- Atualizar tooltip
+        Tooltip.Text = "Fechar Car Flipper"
+        
     else
-        -- Fechar
+        -- FECHAR
+        print("🔴 Fechando interface (clique #" .. toggleCount .. ")")
+        
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
             Size = UDim2.new(0, 920, 0, 0),
             Position = UDim2.new(0.5, -460, 0.5, 0)
@@ -632,26 +661,51 @@ function ToggleGUI()
         
         ClockSystem.isRunning = false
         
-        -- Mudar ícone do botão para indicar que está fechado
+        -- Mudar ícone do botão (mais escuro = fechado)
         TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
             ImageColor3 = Color3.fromRGB(150, 150, 160)
         }):Play()
+        
+        -- Atualizar tooltip
+        Tooltip.Text = "Abrir Car Flipper"
         
         task.wait(0.3)
         MainFrame.Visible = false
     end
     
     toggleAnimating = false
+    print("✅ Estado atual: " .. (isOpen and "ABERTO" or "FECHADO"))
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. EVENTO DO BOTÃO FLUTUANTE
+-- 14. EVENTO DO BOTÃO FLUTUANTE (CLIQUE ILIMITADO)
 -- ═══════════════════════════════════════════════════════════════
 
-ToggleButton.MouseButton1Click:Connect(ToggleGUI)
+ToggleButton.MouseButton1Click:Connect(function()
+    ToggleGUI()
+end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. ATUALIZAÇÃO EM TEMPO REAL - RELÓGIO
+-- 15. ATALHO DE TECLADO (OPCIONAL)
+-- ═══════════════════════════════════════════════════════════════
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Tecla "C" para abrir/fechar (opcional)
+    if input.KeyCode == Enum.KeyCode.C then
+        ToggleGUI()
+    end
+    
+    -- Tecla "P" para mostrar status (debug)
+    if input.KeyCode == Enum.KeyCode.P then
+        print("📊 Status: " .. (isOpen and "ABERTO" or "FECHADO"))
+        print("📊 Cliques totais: " .. toggleCount)
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- 16. ATUALIZAÇÃO EM TEMPO REAL - RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 function UpdateClock()
@@ -675,7 +729,7 @@ spawn(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. API PÚBLICA
+-- 17. API PÚBLICA
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
@@ -727,19 +781,28 @@ local CarFlipperAPI = {
     IsOpen = function()
         return isOpen
     end,
+    GetToggleCount = function()
+        return toggleCount
+    end,
 }
 
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 17. FINALIZAÇÃO
+-- 18. FINALIZAÇÃO
 -- ═══════════════════════════════════════════════════════════════
 
-print("✅ Car Flipper - GomezXitado carregado com sucesso!")
-print("📌 Botão preto no canto superior direito (ao lado da engrenagem)")
-print("🔄 Interface abre automaticamente ao executar")
-print("📌 Clique no botão para abrir/fechar")
-print("📌 Use _G.CarFlipper para controlar a interface")
+print("╔═══════════════════════════════════════════════════════════╗")
+print("║     🚗 CAR FLIPPER - GOMEZXITADO CARREGADO!              ║")
+print("║                                                           ║")
+print("║  ✅ Interface aberta automaticamente                      ║")
+print("║  📌 Botão preto no canto superior direito                 ║")
+print("║  🔄 Clique quantas vezes quiser para abrir/fechar        ║")
+print("║  ⌨️  Tecla 'C' para abrir/fechar (opcional)              ║")
+print("║  📊 Tecla 'P' para ver status (debug)                    ║")
+print("║                                                           ║")
+print("║  📌 Use _G.CarFlipper para controlar a interface         ║")
+print("╚═══════════════════════════════════════════════════════════╝")
 
 CarFlipperAPI.SetStatus("[Car Flipper] Aguardando ações...")
 CarFlipperAPI.RefreshClock()
