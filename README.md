@@ -1,7 +1,7 @@
 --[[
     Car Flipper - Painel Completo com Developer Console
-    Todas as opções integradas
-    Versão 6.0
+    Todas as abas: Log, Information, Warning, Error, Memory
+    Versão 7.0 - UI Completa com Console
 ]]
 
 -- ============================================================
@@ -16,6 +16,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
 
 repeat task.wait() until Player and Player.Character and Player.Character:FindFirstChild("Humanoid")
 print("🚗 Car Flipper Painel Completo Iniciando...")
@@ -29,6 +30,7 @@ local autoFarmActive = false
 local currentAction = "Idle"
 local logEntries = {}
 local consoleLines = {}
+local consoleMode = "Log" -- Log, Information, Warning, Error, Memory
 
 -- ============================================================
 -- 3. CRIAR UI PRINCIPAL
@@ -47,8 +49,8 @@ local function CreateCarFlipperUI()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 520, 0, 680)
-    MainFrame.Position = UDim2.new(0.5, -260, 0.5, -340)
+    MainFrame.Size = UDim2.new(0, 540, 0, 700)
+    MainFrame.Position = UDim2.new(0.5, -270, 0.5, -350)
     MainFrame.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
     MainFrame.BackgroundTransparency = 0.05
     MainFrame.BorderSizePixel = 0
@@ -101,7 +103,7 @@ local function CreateCarFlipperUI()
     
     -- Título
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(0.5, 0, 0.5, 0)
+    Title.Size = UDim2.new(0.4, 0, 0.5, 0)
     Title.Position = UDim2.new(0, 16, 0, 4)
     Title.BackgroundTransparency = 1
     Title.Text = "🚗 Car Flipper"
@@ -114,9 +116,9 @@ local function CreateCarFlipperUI()
     -- Money
     local MoneyLabel = Instance.new("TextLabel")
     MoneyLabel.Size = UDim2.new(0.4, 0, 0.5, 0)
-    MoneyLabel.Position = UDim2.new(0.5, 0, 0, 4)
+    MoneyLabel.Position = UDim2.new(0.4, 0, 0, 4)
     MoneyLabel.BackgroundTransparency = 1
-    MoneyLabel.Text = "💰 1,497,451$"
+    MoneyLabel.Text = "💰 1,522,964$"
     MoneyLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
     MoneyLabel.TextSize = 16
     MoneyLabel.Font = Enum.Font.Poppins
@@ -128,24 +130,24 @@ local function CreateCarFlipperUI()
     SysStatus.Size = UDim2.new(0.5, 0, 0.4, 0)
     SysStatus.Position = UDim2.new(0, 16, 0, 32)
     SysStatus.BackgroundTransparency = 1
-    SysStatus.Text = "[SYSTEM] AUCTION STARTED"
+    SysStatus.Text = "[SYSTEM] ONLINE"
     SysStatus.TextColor3 = Color3.fromRGB(34, 197, 94)
     SysStatus.TextSize = 11
     SysStatus.Font = Enum.Font.Poppins
     SysStatus.TextXAlignment = Enum.TextXAlignment.Left
     SysStatus.Parent = Header
     
-    -- Carro selecionado
-    local CarSelected = Instance.new("TextLabel")
-    CarSelected.Size = UDim2.new(0.5, 0, 0.4, 0)
-    CarSelected.Position = UDim2.new(0.5, 0, 0, 32)
-    CarSelected.BackgroundTransparency = 1
-    CarSelected.Text = "[EPIC] Desert Crane Pinnace"
-    CarSelected.TextColor3 = Color3.fromRGB(255, 215, 0)
-    CarSelected.TextSize = 11
-    CarSelected.Font = Enum.Font.Poppins
-    CarSelected.TextXAlignment = Enum.TextXAlignment.Right
-    CarSelected.Parent = Header
+    -- Player
+    local PlayerLabel = Instance.new("TextLabel")
+    PlayerLabel.Size = UDim2.new(0.3, 0, 0.4, 0)
+    PlayerLabel.Position = UDim2.new(0.7, 0, 0, 32)
+    PlayerLabel.BackgroundTransparency = 1
+    PlayerLabel.Text = "👤 " .. Player.Name
+    PlayerLabel.TextColor3 = Color3.fromRGB(180, 200, 240)
+    PlayerLabel.TextSize = 11
+    PlayerLabel.Font = Enum.Font.Poppins
+    PlayerLabel.TextXAlignment = Enum.TextXAlignment.Right
+    PlayerLabel.Parent = Header
     
     -- Controles da janela
     local Controls = Instance.new("Frame")
@@ -173,7 +175,7 @@ local function CreateCarFlipperUI()
     local closeBtn = CreateControlButton("✕", 60, Color3.fromRGB(255, 80, 80))
     
     -- ============================================================
-    -- 6. STATUS BAR COM INFO DO JOGO
+    -- 6. STATUS BAR
     -- ============================================================
     
     local StatusBar = Instance.new("Frame")
@@ -217,28 +219,28 @@ local function CreateCarFlipperUI()
     -- Status text
     local StatusText = Instance.new("TextLabel")
     StatusText.Name = "StatusText"
-    StatusText.Size = UDim2.new(0.5, 0, 1, 0)
+    StatusText.Size = UDim2.new(0.6, 0, 1, 0)
     StatusText.Position = UDim2.new(0, 28, 0, 0)
     StatusText.BackgroundTransparency = 1
-    StatusText.Text = "[SYSTEM] AUCTION STARTED"
+    StatusText.Text = "[SYSTEM] Pronto"
     StatusText.TextColor3 = Color3.fromRGB(180, 200, 240)
     StatusText.TextSize = 11
     StatusText.Font = Enum.Font.Poppins
     StatusText.TextXAlignment = Enum.TextXAlignment.Left
     StatusText.Parent = StatusBar
     
-    -- Info do carro
-    local CarInfo = Instance.new("TextLabel")
-    CarInfo.Name = "CarInfo"
-    CarInfo.Size = UDim2.new(0.5, 0, 1, 0)
-    CarInfo.Position = UDim2.new(0.5, 0, 0, 0)
-    CarInfo.BackgroundTransparency = 1
-    CarInfo.Text = "[EPIC] Desert Crane Pinnace"
-    CarInfo.TextColor3 = Color3.fromRGB(255, 215, 0)
-    CarInfo.TextSize = 11
-    CarInfo.Font = Enum.Font.Poppins
-    CarInfo.TextXAlignment = Enum.TextXAlignment.Right
-    CarInfo.Parent = StatusBar
+    -- Info adicional
+    local ExtraInfo = Instance.new("TextLabel")
+    ExtraInfo.Name = "ExtraInfo"
+    ExtraInfo.Size = UDim2.new(0.3, 0, 1, 0)
+    ExtraInfo.Position = UDim2.new(0.7, 0, 0, 0)
+    ExtraInfo.BackgroundTransparency = 1
+    ExtraInfo.Text = "1/3.0"
+    ExtraInfo.TextColor3 = Color3.fromRGB(128, 140, 180)
+    ExtraInfo.TextSize = 11
+    ExtraInfo.Font = Enum.Font.Poppins
+    ExtraInfo.TextXAlignment = Enum.TextXAlignment.Right
+    ExtraInfo.Parent = StatusBar
     
     -- ============================================================
     -- 7. TABS (Auto / Run Once / Console)
@@ -284,6 +286,7 @@ local function CreateCarFlipperUI()
         autoUnderline.BackgroundTransparency = 0
         runUnderline.BackgroundTransparency = 1
         consoleUnderline.BackgroundTransparency = 1
+        ShowContent("Auto")
     end)
     
     runTab.MouseButton1Click:Connect(function()
@@ -293,6 +296,7 @@ local function CreateCarFlipperUI()
         runUnderline.BackgroundTransparency = 0
         autoUnderline.BackgroundTransparency = 1
         consoleUnderline.BackgroundTransparency = 1
+        ShowContent("RunOnce")
     end)
     
     consoleTab.MouseButton1Click:Connect(function()
@@ -302,10 +306,11 @@ local function CreateCarFlipperUI()
         consoleUnderline.BackgroundTransparency = 0
         autoUnderline.BackgroundTransparency = 1
         runUnderline.BackgroundTransparency = 1
+        ShowContent("Console")
     end)
     
     -- ============================================================
-    -- 8. CONTEÚDO SCROLLABLE
+    -- 8. CONTEÚDO
     -- ============================================================
     
     local ContentFrame = Instance.new("Frame")
@@ -316,13 +321,16 @@ local function CreateCarFlipperUI()
     ContentFrame.ClipsDescendants = true
     ContentFrame.Parent = MainFrame
     
+    -- Scrolling para Auto/RunOnce
     local Scrolling = Instance.new("ScrollingFrame")
+    Scrolling.Name = "Scrolling"
     Scrolling.Size = UDim2.new(1, 0, 1, 0)
     Scrolling.BackgroundTransparency = 1
     Scrolling.BorderSizePixel = 0
     Scrolling.ScrollBarThickness = 3
     Scrolling.ScrollBarImageColor3 = Color3.fromRGB(59, 130, 246)
     Scrolling.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+    Scrolling.Visible = true
     Scrolling.Parent = ContentFrame
     
     local ContentLayout = Instance.new("UIListLayout")
@@ -332,7 +340,183 @@ local function CreateCarFlipperUI()
     ContentLayout.Parent = Scrolling
     
     -- ============================================================
-    -- 9. CRIAR SEÇÕES
+    -- 9. CONSOLE (Developer Console)
+    -- ============================================================
+    
+    local ConsoleFrame = Instance.new("Frame")
+    ConsoleFrame.Name = "ConsoleFrame"
+    ConsoleFrame.Size = UDim2.new(1, 0, 1, 0)
+    ConsoleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    ConsoleFrame.BackgroundTransparency = 0.3
+    ConsoleFrame.BorderSizePixel = 0
+    ConsoleFrame.Visible = false
+    ConsoleFrame.Parent = ContentFrame
+    
+    local ConsoleCorner = Instance.new("UICorner")
+    ConsoleCorner.CornerRadius = UDim.new(0, 12)
+    ConsoleCorner.Parent = ConsoleFrame
+    
+    -- Header do console
+    local ConsoleHeader = Instance.new("Frame")
+    ConsoleHeader.Size = UDim2.new(1, 0, 0, 34)
+    ConsoleHeader.BackgroundColor3 = Color3.fromRGB(20, 22, 32)
+    ConsoleHeader.BorderSizePixel = 0
+    ConsoleHeader.Parent = ConsoleFrame
+    
+    local ConsoleTitle = Instance.new("TextLabel")
+    ConsoleTitle.Size = UDim2.new(0.3, 0, 1, 0)
+    ConsoleTitle.Position = UDim2.new(0, 12, 0, 0)
+    ConsoleTitle.BackgroundTransparency = 1
+    ConsoleTitle.Text = "📟 Developer Console"
+    ConsoleTitle.TextColor3 = Color3.fromRGB(200, 215, 245)
+    ConsoleTitle.TextSize = 12
+    ConsoleTitle.Font = Enum.Font.Poppins
+    ConsoleTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ConsoleTitle.Parent = ConsoleHeader
+    
+    -- Abas do console
+    local ConsoleTabs = Instance.new("Frame")
+    ConsoleTabs.Size = UDim2.new(0.5, 0, 1, 0)
+    ConsoleTabs.Position = UDim2.new(0.35, 0, 0, 0)
+    ConsoleTabs.BackgroundTransparency = 1
+    ConsoleTabs.Parent = ConsoleHeader
+    
+    local consoleTabNames = {"Log", "Information", "Warning", "Error", "Memory"}
+    local consoleTabButtons = {}
+    local consoleTabUnderlines = {}
+    
+    for i, name in ipairs(consoleTabNames) do
+        local tab = Instance.new("TextButton")
+        tab.Size = UDim2.new(0, 60, 1, 0)
+        tab.Position = UDim2.new(0, (i-1) * 65, 0, 0)
+        tab.BackgroundTransparency = 1
+        tab.Text = name
+        tab.TextColor3 = i == 1 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(128, 140, 180)
+        tab.TextSize = 11
+        tab.Font = Enum.Font.Poppins
+        tab.Parent = ConsoleTabs
+        
+        local underline = Instance.new("Frame")
+        underline.Size = UDim2.new(0, 40, 0, 2)
+        underline.Position = UDim2.new(0.5, -20, 1, -2)
+        underline.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+        underline.BackgroundTransparency = i == 1 and 0 or 1
+        underline.BorderSizePixel = 0
+        underline.Parent = tab
+        
+        consoleTabButtons[i] = tab
+        consoleTabUnderlines[i] = underline
+        
+        tab.MouseButton1Click:Connect(function()
+            for j, btn in ipairs(consoleTabButtons) do
+                btn.TextColor3 = Color3.fromRGB(128, 140, 180)
+                consoleTabUnderlines[j].BackgroundTransparency = 1
+            end
+            tab.TextColor3 = Color3.fromRGB(255, 255, 255)
+            underline.BackgroundTransparency = 0
+            consoleMode = name
+            UpdateConsole()
+        end)
+    end
+    
+    -- Clear button
+    local ClearBtn = Instance.new("TextButton")
+    ClearBtn.Size = UDim2.new(0, 50, 0, 24)
+    ClearBtn.Position = UDim2.new(1, -60, 0.5, -12)
+    ClearBtn.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+    ClearBtn.BackgroundTransparency = 0.5
+    ClearBtn.Text = "Clear"
+    ClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ClearBtn.TextSize = 11
+    ClearBtn.Font = Enum.Font.Poppins
+    ClearBtn.Parent = ConsoleHeader
+    
+    local ClearCorner = Instance.new("UICorner")
+    ClearCorner.CornerRadius = UDim.new(1, 0)
+    ClearCorner.Parent = ClearBtn
+    
+    ClearBtn.MouseButton1Click:Connect(function()
+        consoleLines = {}
+        UpdateConsole()
+    end)
+    
+    -- Container do console
+    local ConsoleContainer = Instance.new("ScrollingFrame")
+    ConsoleContainer.Size = UDim2.new(1, -16, 1, -46)
+    ConsoleContainer.Position = UDim2.new(0, 8, 0, 38)
+    ConsoleContainer.BackgroundTransparency = 1
+    ConsoleContainer.BorderSizePixel = 0
+    ConsoleContainer.ScrollBarThickness = 3
+    ConsoleContainer.ScrollBarImageColor3 = Color3.fromRGB(34, 197, 94)
+    ConsoleContainer.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+    ConsoleContainer.Parent = ConsoleFrame
+    
+    local ConsoleList = Instance.new("UIListLayout")
+    ConsoleList.Padding = UDim.new(0, 1)
+    ConsoleList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    ConsoleList.SortOrder = Enum.SortOrder.LayoutOrder
+    ConsoleList.Parent = ConsoleContainer
+    
+    -- ============================================================
+    -- 10. FUNÇÃO DE LOG
+    -- ============================================================
+    
+    function AddLog(message, logType)
+        logType = logType or "Log"
+        local timestamp = os.date("%H:%M:%S")
+        local entry = {
+            text = string.format("[%s] %s", timestamp, message),
+            type = logType,
+            time = timestamp
+        }
+        
+        table.insert(consoleLines, 1, entry)
+        if #consoleLines > 200 then
+            table.remove(consoleLines)
+        end
+        
+        if ConsoleFrame.Visible then
+            UpdateConsole()
+        end
+    end
+    
+    function UpdateConsole()
+        -- Limpar container
+        for _, child in pairs(ConsoleContainer:GetChildren()) do
+            if child:IsA("TextLabel") then
+                child:Destroy()
+            end
+        end
+        
+        local colorMap = {
+            Log = Color3.fromRGB(176, 214, 160),
+            Information = Color3.fromRGB(100, 180, 255),
+            Warning = Color3.fromRGB(255, 200, 100),
+            Error = Color3.fromRGB(255, 100, 100),
+            Memory = Color3.fromRGB(200, 150, 255)
+        }
+        
+        local displayColor = colorMap[consoleMode] or Color3.fromRGB(176, 214, 160)
+        
+        for _, entry in ipairs(consoleLines) do
+            if entry.type == consoleMode or consoleMode == "Log" then
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 0, 18)
+                label.BackgroundTransparency = 1
+                label.Text = entry.text
+                label.TextColor3 = entry.type == consoleMode and displayColor or Color3.fromRGB(128, 140, 180)
+                label.TextSize = 11
+                label.Font = Enum.Font.Code
+                label.TextXAlignment = Enum.TextXAlignment.Left
+                label.Parent = ConsoleContainer
+            end
+        end
+        
+        ConsoleContainer.CanvasPosition = Vector2.new(0, 0)
+    end
+    
+    -- ============================================================
+    -- 11. CRIAR SEÇÕES
     -- ============================================================
     
     local function CreateSection(title, icon, layoutOrder)
@@ -369,10 +553,10 @@ local function CreateCarFlipperUI()
     end
     
     -- ============================================================
-    -- 10. TOGGLE ROW COMPLETA
+    -- 12. TOGGLE ROW COMPLETA
     -- ============================================================
     
-    local function AddToggleRow(parent, icon, title, subtitle, defaultActive, isGreen, actionType)
+    local function AddToggleRow(parent, icon, title, subtitle, defaultActive, isGreen)
         local row = Instance.new("Frame")
         row.Size = UDim2.new(1, 0, 0, 34)
         row.BackgroundTransparency = 1
@@ -451,20 +635,16 @@ local function CreateCarFlipperUI()
     end
     
     -- ============================================================
-    -- 11. FUNÇÕES DE AÇÃO
+    -- 13. FUNÇÕES DE AÇÃO
     -- ============================================================
     
     function ExecuteAction(action)
-        local statusText = StatusText
-        local statusDot = StatusDot
-        local dotGlow = DotGlow
-        
-        statusText.Text = "[SYSTEM] Executando: " .. action
-        statusDot.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
-        dotGlow.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+        StatusText.Text = "[SYSTEM] Executando: " .. action
+        StatusDot.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
+        DotGlow.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
         currentAction = action
         
-        -- Mapeamento de ações para RemoteEvents
+        -- Mapeamento de ações
         local actionMap = {
             ["Claim Cash"] = {"ClaimCash", "CashClaim", "CollectCash"},
             ["Claim Parts"] = {"ClaimParts", "PartsClaim", "CollectParts"},
@@ -492,7 +672,7 @@ local function CreateCarFlipperUI()
             if remote and remote:IsA("RemoteEvent") then
                 remote:FireServer()
                 executed = true
-                AddLog("✅ " .. action .. " executado via " .. remoteName)
+                AddLog("✅ " .. action .. " executado via " .. remoteName, "Log")
                 break
             end
         end
@@ -505,7 +685,7 @@ local function CreateCarFlipperUI()
                     if nameLower:find(actionLower) or actionLower:find(nameLower) then
                         child:FireServer()
                         executed = true
-                        AddLog("✅ " .. action .. " executado via " .. child.Name)
+                        AddLog("✅ " .. action .. " executado via " .. child.Name, "Log")
                         break
                     end
                 end
@@ -513,130 +693,34 @@ local function CreateCarFlipperUI()
         end
         
         if not executed then
-            AddLog("⚠️ Ação não encontrada: " .. action)
-            statusText.Text = "[SYSTEM] Ação não disponível: " .. action
+            AddLog("⚠️ Ação não encontrada: " .. action, "Warning")
+            StatusText.Text = "[SYSTEM] Ação não disponível: " .. action
             task.wait(1)
         end
         
         task.wait(1.5)
-        statusText.Text = "[SYSTEM] AUCTION STARTED"
-        statusDot.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
-        dotGlow.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+        StatusText.Text = "[SYSTEM] Pronto"
+        StatusDot.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+        DotGlow.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
     end
     
     -- ============================================================
-    -- 12. CONSOLE / LOGS
+    -- 14. FUNÇÃO DE TROCA DE ABAS
     -- ============================================================
     
-    local ConsoleFrame = Instance.new("Frame")
-    ConsoleFrame.Name = "ConsoleFrame"
-    ConsoleFrame.Size = UDim2.new(1, 0, 1, 0)
-    ConsoleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    ConsoleFrame.BackgroundTransparency = 0.3
-    ConsoleFrame.BorderSizePixel = 0
-    ConsoleFrame.Visible = false
-    ConsoleFrame.Parent = ContentFrame
-    
-    local ConsoleCorner = Instance.new("UICorner")
-    ConsoleCorner.CornerRadius = UDim.new(0, 12)
-    ConsoleCorner.Parent = ConsoleFrame
-    
-    -- Header do console
-    local ConsoleHeader = Instance.new("Frame")
-    ConsoleHeader.Size = UDim2.new(1, 0, 0, 28)
-    ConsoleHeader.BackgroundColor3 = Color3.fromRGB(20, 22, 32)
-    ConsoleHeader.BorderSizePixel = 0
-    ConsoleHeader.Parent = ConsoleFrame
-    
-    local ConsoleTitle = Instance.new("TextLabel")
-    ConsoleTitle.Size = UDim2.new(0.5, 0, 1, 0)
-    ConsoleTitle.Position = UDim2.new(0, 12, 0, 0)
-    ConsoleTitle.BackgroundTransparency = 1
-    ConsoleTitle.Text = "📟 Developer Console"
-    ConsoleTitle.TextColor3 = Color3.fromRGB(200, 215, 245)
-    ConsoleTitle.TextSize = 12
-    ConsoleTitle.Font = Enum.Font.Poppins
-    ConsoleTitle.TextXAlignment = Enum.TextXAlignment.Left
-    ConsoleTitle.Parent = ConsoleHeader
-    
-    -- Clear button
-    local ClearBtn = Instance.new("TextButton")
-    ClearBtn.Size = UDim2.new(0, 50, 0, 22)
-    ClearBtn.Position = UDim2.new(1, -60, 0.5, -11)
-    ClearBtn.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
-    ClearBtn.BackgroundTransparency = 0.5
-    ClearBtn.Text = "Clear"
-    ClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ClearBtn.TextSize = 11
-    ClearBtn.Font = Enum.Font.Poppins
-    ClearBtn.Parent = ConsoleHeader
-    
-    local ClearCorner = Instance.new("UICorner")
-    ClearCorner.CornerRadius = UDim.new(1, 0)
-    ClearCorner.Parent = ClearBtn
-    
-    ClearBtn.MouseButton1Click:Connect(function()
-        consoleLines = {}
-        for _, child in pairs(ConsoleContainer:GetChildren()) do
-            child:Destroy()
-        end
-    end)
-    
-    -- Container do console
-    local ConsoleContainer = Instance.new("ScrollingFrame")
-    ConsoleContainer.Size = UDim2.new(1, -16, 1, -40)
-    ConsoleContainer.Position = UDim2.new(0, 8, 0, 32)
-    ConsoleContainer.BackgroundTransparency = 1
-    ConsoleContainer.BorderSizePixel = 0
-    ConsoleContainer.ScrollBarThickness = 3
-    ConsoleContainer.ScrollBarImageColor3 = Color3.fromRGB(34, 197, 94)
-    ConsoleContainer.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
-    ConsoleContainer.Parent = ConsoleFrame
-    
-    local ConsoleList = Instance.new("UIListLayout")
-    ConsoleList.Padding = UDim.new(0, 1)
-    ConsoleList.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    ConsoleList.SortOrder = Enum.SortOrder.LayoutOrder
-    ConsoleList.Parent = ConsoleContainer
-    
-    -- ============================================================
-    -- 13. FUNÇÃO DE LOG
-    -- ============================================================
-    
-    function AddLog(message, isError)
-        local timestamp = os.date("%H:%M:%S")
-        local entry = string.format("[%s] %s", timestamp, message)
-        
-        table.insert(logEntries, 1, entry)
-        if #logEntries > 100 then
-            table.remove(logEntries)
-        end
-        
-        -- Adicionar ao console
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 0, 18)
-        label.BackgroundTransparency = 1
-        label.Text = entry
-        label.TextColor3 = isError and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(176, 214, 160)
-        label.TextSize = 11
-        label.Font = Enum.Font.Code
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = ConsoleContainer
-        
-        -- Scroll para o topo
-        ConsoleContainer.CanvasPosition = Vector2.new(0, 0)
-        
-        -- Limitar linhas
-        local children = ConsoleContainer:GetChildren()
-        if #children > 50 then
-            for i = 1, #children - 50 do
-                children[i]:Destroy()
-            end
+    function ShowContent(mode)
+        if mode == "Console" then
+            Scrolling.Visible = false
+            ConsoleFrame.Visible = true
+            UpdateConsole()
+        else
+            Scrolling.Visible = true
+            ConsoleFrame.Visible = false
         end
     end
     
     -- ============================================================
-    -- 14. CONSTRUIR TODAS AS SEÇÕES
+    -- 15. CONSTRUIR TODAS AS SEÇÕES
     -- ============================================================
     
     -- ===== BASE =====
@@ -654,68 +738,4 @@ local function CreateCarFlipperUI()
     AddToggleRow(carsContainer, "🔧", "Fix Cars", "Reparar veículos", true)
     AddToggleRow(carsContainer, "💲", "Sell Fixed Cars", "Vender reparados", true, true)
     AddToggleRow(carsContainer, "🔄", "Update Stands", "Atualizar vitrines", false)
-    AddToggleRow(carsContainer, "🏷️", "Buy, Fix, Sell Cheapest", "Auto flip mais barato", true)
-    
-    -- ===== REWARDS =====
-    local rewardsSection, rewardsContainer = CreateSection("Rewards", "🎁", 3)
-    AddToggleRow(rewardsContainer, "⏳", "Claim Playtime Rewards", "Recompensas por tempo", true, true)
-    AddToggleRow(rewardsContainer, "📆", "Claim Daily Rewards", "Recompensas diárias", true)
-    
-    -- ===== AUCTION =====
-    local auctionSection, auctionContainer = CreateSection("Auction", "🏪", 4)
-    AddToggleRow(auctionContainer, "🔨", "Auction Auto-Bid", "Lance automático em leilões", true, true)
-    AddToggleRow(auctionContainer, "⭐", "Auto Sell Legendary", "Vender carros lendários", false)
-    
-    -- ===== EXTRA =====
-    local extraSection, extraContainer = CreateSection("Extra", "⚡", 5)
-    AddToggleRow(extraContainer, "📦", "Collect All", "Coletar tudo de uma vez", false, true)
-    AddToggleRow(extraContainer, "🏆", "Auto Farm", "Farm automático", true)
-    
-    -- ============================================================
-    -- 15. PROGRESS BAR
-    -- ============================================================
-    
-    local ProgressFrame = Instance.new("Frame")
-    ProgressFrame.Name = "ProgressFrame"
-    ProgressFrame.Size = UDim2.new(1, -32, 0, 48)
-    ProgressFrame.Position = UDim2.new(0, 16, 1, -58)
-    ProgressFrame.BackgroundTransparency = 1
-    ProgressFrame.Parent = MainFrame
-    
-    -- Stats
-    local StatsLine = Instance.new("Frame")
-    StatsLine.Size = UDim2.new(1, 0, 0, 20)
-    StatsLine.BackgroundTransparency = 1
-    StatsLine.Parent = ProgressFrame
-    
-    local function CreateStatLabel(text, xPos)
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(0.2, 0, 1, 0)
-        label.Position = UDim2.new(xPos, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.TextColor3 = Color3.fromRGB(180, 200, 240)
-        label.TextSize = 11
-        label.Font = Enum.Font.Poppins
-        label.TextXAlignment = Enum.TextXAlignment.Center
-        label.Parent = StatsLine
-        return label
-    end
-    
-    CreateStatLabel("1/s", 0)
-    CreateStatLabel("453/10000", 0.2)
-    CreateStatLabel("145/s", 0.4)
-    CreateStatLabel("1618/100000", 0.6)
-    CreateStatLabel("Nivel.4", 0.8)
-    
-    -- Progress bar
-    local ProgressBg = Instance.new("Frame")
-    ProgressBg.Size = UDim2.new(1, 0, 0, 8)
-    ProgressBg.Position = UDim2.new(0, 0, 0, 24)
-    ProgressBg.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
-    ProgressBg.BorderSizePixel = 0
-    ProgressBg.Parent = ProgressFrame
-    
-    local ProgressBgCorner = Instance.new("UICorner")
-    ProgressBgCorner.CornerRadius = UDim.new(1, 0)
-    ProgressBgCorner.Parent = Progress
+    AddToggleRow(carsContainer, "🏷️", "Buy, Fix,
