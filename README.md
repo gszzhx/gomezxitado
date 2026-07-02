@@ -2,7 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO
     Interface Premium com Layout Horizontal
-    Removido: Campo de busca, botão Enviar e Aba Run Once
+    CORRIGIDO: Checkboxes e elementos visíveis
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -14,7 +14,6 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
 
 -- ═══════════════════════════════════════════════════════════════
 -- 2. TEMA ESCURO (DARK THEME)
@@ -57,8 +56,8 @@ MainGui.ResetOnSpawn = false
 -- 3.2 MainFrame (Janela Principal - Horizontal)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 900, 0, 520)
-MainFrame.Position = UDim2.new(0.5, -450, 0.5, -260)
+MainFrame.Size = UDim2.new(0, 920, 0, 560)
+MainFrame.Position = UDim2.new(0.5, -460, 0.5, -280)
 MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -88,7 +87,7 @@ ShadowCorner.CornerRadius = UDim.new(0, 18)
 ShadowCorner.Parent = Shadow
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. BARRA DE TÍTULO COM INFORMAÇÕES
+-- 4. BARRA DE TÍTULO
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
@@ -116,11 +115,11 @@ TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.TextYAlignment = Enum.TextYAlignment.Center
 TitleText.Parent = TitleBar
 
--- Valor em dinheiro (canto direito)
+-- Valor em dinheiro
 local MoneyText = Instance.new("TextLabel")
 MoneyText.Name = "MoneyText"
-MoneyText.Size = UDim2.new(0.3, -20, 1, 0)
-MoneyText.Position = UDim2.new(0.7, 0, 0, 0)
+MoneyText.Size = UDim2.new(0.25, -20, 1, 0)
+MoneyText.Position = UDim2.new(0.5, 0, 0, 0)
 MoneyText.BackgroundTransparency = 1
 MoneyText.Text = "1,662,627$"
 MoneyText.TextColor3 = Theme.Gold
@@ -130,11 +129,11 @@ MoneyText.TextXAlignment = Enum.TextXAlignment.Right
 MoneyText.TextYAlignment = Enum.TextYAlignment.Center
 MoneyText.Parent = TitleBar
 
--- Data/Hora (canto direito)
+-- Data/Hora
 local DateTimeText = Instance.new("TextLabel")
 DateTimeText.Name = "DateTimeText"
-DateTimeText.Size = UDim2.new(0.15, -10, 1, 0)
-DateTimeText.Position = UDim2.new(0.85, 0, 0, 0)
+DateTimeText.Size = UDim2.new(0.2, -10, 1, 0)
+DateTimeText.Position = UDim2.new(0.75, 0, 0, 0)
 DateTimeText.BackgroundTransparency = 1
 DateTimeText.Text = "22:13 01/07/2026"
 DateTimeText.TextColor3 = Theme.TextMuted
@@ -178,15 +177,15 @@ end)
 
 CloseBtn.MouseButton1Click:Connect(function()
     TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-        Size = UDim2.new(0, 900, 0, 0),
-        Position = UDim2.new(0.5, -450, 0.5, 0)
+        Size = UDim2.new(0, 920, 0, 0),
+        Position = UDim2.new(0.5, -460, 0.5, 0)
     }):Play()
     task.wait(0.3)
     MainGui.Enabled = false
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. ABA ÚNICA (AUTO) - REMOVIDO RUN ONCE
+-- 5. ABA AUTO
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
@@ -196,11 +195,11 @@ TabContainer.Position = UDim2.new(0, 10, 0, 54)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
--- Apenas a aba "Auto" (centralizada)
+-- Aba Auto (centralizada)
 local AutoTab = Instance.new("TextButton")
 AutoTab.Name = "AutoTab"
-AutoTab.Size = UDim2.new(0.2, 0, 1, -4)
-AutoTab.Position = UDim2.new(0.4, 0, 0, 2)
+AutoTab.Size = UDim2.new(0.15, 0, 1, -4)
+AutoTab.Position = UDim2.new(0.425, 0, 0, 2)
 AutoTab.BackgroundColor3 = Theme.Accent
 AutoTab.Text = "Auto"
 AutoTab.TextColor3 = Theme.Background
@@ -231,7 +230,7 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. CONTAINER DE CONTEÚDO (LAYOUT HORIZONTAL)
+-- 7. CONTAINER DE CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
@@ -249,7 +248,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. SISTEMA DE CHECKBOX PERSONALIZADO
+-- 8. SISTEMA DE CHECKBOX
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -257,7 +256,7 @@ local Checkboxes = {}
 function CreateCheckbox(parent, name, label, xPos, yPos)
     local container = Instance.new("Frame")
     container.Name = name
-    container.Size = UDim2.new(0, 160, 0, 28)
+    container.Size = UDim2.new(0, 165, 0, 30)
     container.Position = UDim2.new(xPos, 0, 0, yPos)
     container.BackgroundTransparency = 1
     container.Parent = parent
@@ -280,7 +279,7 @@ function CreateCheckbox(parent, name, label, xPos, yPos)
     checkStroke.Thickness = 1
     checkStroke.Parent = checkBG
     
-    -- Ícone de Check
+    -- Ícone Check
     local checkIcon = Instance.new("TextLabel")
     checkIcon.Name = "CheckIcon"
     checkIcon.Size = UDim2.new(1, 0, 1, 0)
@@ -357,7 +356,7 @@ function CreateCheckbox(parent, name, label, xPos, yPos)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. CONSTRUÇÃO DAS SEÇÕES (HORIZONTAL)
+-- 9. CONSTRUÇÃO DAS SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 -- Dados das seções
@@ -365,29 +364,29 @@ local SectionsData = {
     {
         title = "Base",
         items = {
-            {name = "ClaimCash", label = "Claim Cash"},
-            {name = "ClaimParts", label = "Claim Parts"},
-            {name = "BuyUpgrades", label = "Buy Upgrades"},
-            {name = "ClaimContainers", label = "Claim Containers"},
-            {name = "OpenContainers", label = "Open Containers"},
-            {name = "ClaimQuests", label = "Claim Quests"},
-            {name = "DeliverJunk", label = "Deliver Junk"},
+            "Claim Cash",
+            "Claim Parts",
+            "Buy Upgrades",
+            "Claim Containers",
+            "Open Containers",
+            "Claim Quests",
+            "Deliver Junk",
         }
     },
     {
         title = "Cars",
         items = {
-            {name = "FixCars", label = "Fix Cars"},
-            {name = "SellFixedCars", label = "Sell Fixed Cars"},
-            {name = "UpdateStands", label = "Update Stands"},
-            {name = "BuyFixSellCheapest", label = "Buy, Fix, Sell Cheapest"},
+            "Fix Cars",
+            "Sell Fixed Cars",
+            "Update Stands",
+            "Buy, Fix, Sell Cheapest",
         }
     },
     {
         title = "Rewards",
         items = {
-            {name = "ClaimPlaytimeRewards", label = "Claim Playtime Rewards"},
-            {name = "ClaimDailyRewards", label = "Claim Daily Rewards"},
+            "Claim Playtime Rewards",
+            "Claim Daily Rewards",
         }
     }
 }
@@ -395,7 +394,10 @@ local SectionsData = {
 -- Criar seções horizontalmente
 local sectionWidth = 280
 local spacing = 20
-local startX = 0
+local startX = 10
+
+-- Calcular largura total do canvas
+local totalWidth = (#SectionsData * (sectionWidth + spacing)) - spacing + 20
 
 for i, sectionData in ipairs(SectionsData) do
     local xPos = startX + ((i - 1) * (sectionWidth + spacing))
@@ -444,15 +446,19 @@ for i, sectionData in ipairs(SectionsData) do
     
     -- Criar checkboxes
     local startY = 48
-    for j, item in ipairs(sectionData.items) do
-        local yPos = startY + ((j - 1) * 30)
-        CreateCheckbox(sectionContainer, item.name, item.label, 0, yPos)
+    for j, label in ipairs(sectionData.items) do
+        local yPos = startY + ((j - 1) * 32)
+        local name = label:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
+        CreateCheckbox(sectionContainer, name, label, 0, yPos)
     end
     
     -- Ajustar altura
-    local totalHeight = startY + (#sectionData.items * 30) + 16
+    local totalHeight = startY + (#sectionData.items * 32) + 16
     sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight)
 end
+
+-- Ajustar Canvas
+Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
 -- 10. SISTEMA DE ARRASTAR
@@ -498,14 +504,14 @@ end)
 -- 11. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
-MainFrame.Size = UDim2.new(0, 900, 0, 0)
-MainFrame.Position = UDim2.new(0.5, -450, 0.5, 0)
+MainFrame.Size = UDim2.new(0, 920, 0, 0)
+MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
 
 task.wait(0.1)
 
 TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 900, 0, 520),
-    Position = UDim2.new(0.5, -450, 0.5, -260)
+    Size = UDim2.new(0, 920, 0, 560),
+    Position = UDim2.new(0.5, -460, 0.5, -280)
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
@@ -551,18 +557,18 @@ local CarFlipperAPI = {
     
     Show = function()
         MainGui.Enabled = true
-        MainFrame.Size = UDim2.new(0, 900, 0, 0)
-        MainFrame.Position = UDim2.new(0.5, -450, 0.5, 0)
+        MainFrame.Size = UDim2.new(0, 920, 0, 0)
+        MainFrame.Position = UDim2.new(0.5, -460, 0.5, 0)
         task.wait(0.1)
         TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 900, 0, 520),
-            Position = UDim2.new(0.5, -450, 0.5, -260)
+            Size = UDim2.new(0, 920, 0, 560),
+            Position = UDim2.new(0.5, -460, 0.5, -280)
         }):Play()
     end,
     Hide = function()
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-            Size = UDim2.new(0, 900, 0, 0),
-            Position = UDim2.new(0.5, -450, 0.5, 0)
+            Size = UDim2.new(0, 920, 0, 0),
+            Position = UDim2.new(0.5, -460, 0.5, 0)
         }):Play()
         task.wait(0.3)
         MainGui.Enabled = false
@@ -579,9 +585,15 @@ local CarFlipperAPI = {
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. FINALIZAÇÃO
+-- 13. TESTE - MOSTRAR CHECKBOXES VISÍVEIS
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado com sucesso!")
-print("📐 Layout Horizontal - Removido: Busca, Enviar e Run Once")
+print("📐 Layout Horizontal - Checkboxes visíveis")
 print("📌 Use _G.CarFlipper para controlar a interface")
+
+-- Forçar atualização visual
+task.wait(0.5)
+for name, cb in pairs(Checkboxes) do
+    print("Checkbox carregado:", name)
+end
