@@ -1,29 +1,54 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM PARTS
+    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM PARTS COMPLETO
     Procura ESPECIFICAMENTE o botão "Peças", teleporta e coleta
+    CORREÇÃO: Adicionadas verificações de segurança
     ═══════════════════════════════════════════════════════════════
 --]]
 
 -- ═══════════════════════════════════════════════════════════════
--- 1. CONFIGURAÇÕES E IMPORTAÇÕES
+-- 0. VERIFICAÇÕES DE SEGURANÇA (CORREÇÃO DO ERRO)
 -- ═══════════════════════════════════════════════════════════════
 
+-- Verifica se o ambiente está disponível
+if not game then
+    warn("⚠️ Game service not available")
+    return
+end
+
+-- Tenta obter os serviços com segurança
 local Players = game:GetService("Players")
+if not Players then
+    warn("⚠️ Players service not available")
+    return
+end
+
 local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    warn("⚠️ LocalPlayer not available")
+    return
+end
+
+-- Tenta obter os outros serviços
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
+-- Verifica se os serviços essenciais estão disponíveis
+if not TweenService or not UserInputService or not RunService then
+    warn("⚠️ Essential services not available")
+    return
+end
+
 -- ═══════════════════════════════════════════════════════════════
--- 2. CONFIGURAÇÕES DOS SISTEMAS
+-- 1. CONFIGURAÇÕES DOS SISTEMAS
 -- ═══════════════════════════════════════════════════════════════
 
 local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money"}
 
 -- ═══════════════════════════════════════════════════════════════
--- 3. TEMA
+-- 2. TEMA
 -- ═══════════════════════════════════════════════════════════════
 
 local Theme = {
@@ -50,7 +75,7 @@ local Theme = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. DECLARAÇÕES ANTECIPADAS
+-- 3. DECLARAÇÕES ANTECIPADAS
 -- ═══════════════════════════════════════════════════════════════
 
 local StatusLabel
@@ -63,7 +88,7 @@ local function UpdateStatus(text)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. SISTEMA DE GERENCIAMENTO DE ATIVIDADES
+-- 4. SISTEMA DE GERENCIAMENTO DE ATIVIDADES
 -- ═══════════════════════════════════════════════════════════════
 
 local ActivityManager = {
@@ -120,7 +145,7 @@ function ActivityManager:GetCurrentActivity()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. SISTEMA DE INTERRUPÇÃO (PRIORIDADE ABSOLUTA)
+-- 5. SISTEMA DE INTERRUPÇÃO (PRIORIDADE ABSOLUTA)
 -- ═══════════════════════════════════════════════════════════════
 
 local InterruptionSystem = {
@@ -171,7 +196,7 @@ function InterruptionSystem:GetInterruptedTask()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. SISTEMA CLAIM PARTS - ESPECIFICAMENTE "PEÇAS"
+-- 6. SISTEMA CLAIM PARTS - ESPECIFICAMENTE "PEÇAS"
 -- ═══════════════════════════════════════════════════════════════
 
 local ClaimParts = {
@@ -184,7 +209,7 @@ local ClaimParts = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. SISTEMA CLAIM CASH (estado)
+-- 7. SISTEMA CLAIM CASH (estado)
 -- ═══════════════════════════════════════════════════════════════
 
 local ClaimCash = {
@@ -196,7 +221,7 @@ local ClaimCash = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. FUNÇÕES DE COLETA DE PEÇAS - ESPECIFICAMENTE "PEÇAS"
+-- 8. FUNÇÕES DE COLETA DE PEÇAS - ESPECIFICAMENTE "PEÇAS"
 -- ═══════════════════════════════════════════════════════════════
 
 -- Procura ESPECIFICAMENTE o botão "Peças" na interface
@@ -269,7 +294,7 @@ local function FindPartsButton()
     return nil
 end
 
--- Procura a localização "Peças" no mundo (baseado na imagem)
+-- Procura a localização "Peças" no mundo
 local function FindPartsLocation()
     local partsLocations = {}
     local character = LocalPlayer.Character
@@ -537,8 +562,6 @@ local function CollectParts()
         end
     end
 
-    -- NOTA: Removido o fallback para "Coletar" - APENAS "Peças" agora
-
     if not success then
         UpdateStatus("[Car Flipper] ❌ Nenhum botão 'Peças' encontrado...")
     end
@@ -631,7 +654,7 @@ local function ToggleClaimParts()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. FUNÇÕES DE COLETA DE DINHEIRO (mantidas)
+-- 9. FUNÇÕES DE COLETA DE DINHEIRO (mantidas)
 -- ═══════════════════════════════════════════════════════════════
 
 local function MatchesMoneyKeyword(text)
@@ -954,52 +977,15 @@ local function ToggleClaimCash()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. RELÓGIO
+-- 10. INTERFACE E CHECKBOXES (mantida)
 -- ═══════════════════════════════════════════════════════════════
 
-local ClockSystem = {
-    currentTime = "",
-    isRunning = true,
-}
-
-function ClockSystem:GetCurrentDateTime()
-    local success, result = pcall(function()
-        local response = HttpService:GetAsync("https://worldtimeapi.org/api/timezone/America/Sao_Paulo")
-        if response then
-            local data = HttpService:JSONDecode(response)
-            if data and data.datetime then
-                local datetime = data.datetime
-                local parts = {}
-                for part in string.gmatch(datetime, "[^T]+") do
-                    table.insert(parts, part)
-                end
-                if #parts >= 2 then
-                    local datePart = parts[1]
-                    local timePart = string.sub(parts[2], 1, 5)
-                    local dateFormatted = string.gsub(datePart, "(%d+)-(%d+)-(%d+)", "%3/%2/%1")
-                    return timePart .. " " .. dateFormatted
-                end
-            end
-        end
-    end)
-
-    if not success or not result then
-        local currentTime = os.time()
-        local dateTable = os.date("*t", currentTime)
-        return string.format("%02d:%02d %02d/%02d/%04d",
-            dateTable.hour, dateTable.min,
-            dateTable.day, dateTable.month, dateTable.year)
-    end
-    return result
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 12. BOTÃO FLUTUANTE E INTERFACE
--- ═══════════════════════════════════════════════════════════════
+-- Aguarda o PlayerGui estar disponível
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local ToggleGui = Instance.new("ScreenGui")
 ToggleGui.Name = "ToggleGUI"
-ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ToggleGui.Parent = playerGui
 ToggleGui.ResetOnSpawn = false
 ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -1019,10 +1005,10 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
--- Interface Principal (mantida igual, apenas as seções)
+-- Interface Principal (mantida igual ao original)
 local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "CarFlipperGUI"
-MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+MainGui.Parent = playerGui
 MainGui.ResetOnSpawn = false
 MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -1045,7 +1031,7 @@ MainStroke.Color = Theme.Border
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
-local TitleBar = Instance.new("Frame")
+-- Barra de Títulolocal TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 48)
 TitleBar.BackgroundColor3 = Theme.SurfaceLight
@@ -1074,7 +1060,7 @@ DateTimeText.Name = "DateTimeText"
 DateTimeText.Size = UDim2.new(0.35, -10, 1, 0)
 DateTimeText.Position = UDim2.new(0.65, 0, 0, 0)
 DateTimeText.BackgroundTransparency = 1
-DateTimeText.Text = ClockSystem:GetCurrentDateTime()
+DateTimeText.Text = os.date("%H:%M %d/%m/%Y")
 DateTimeText.TextColor3 = Theme.TextMuted
 DateTimeText.TextSize = 14
 DateTimeText.Font = Enum.Font.Gotham
@@ -1082,6 +1068,7 @@ DateTimeText.TextXAlignment = Enum.TextXAlignment.Right
 DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
 DateTimeText.Parent = TitleBar
 
+-- Status
 StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
@@ -1095,6 +1082,7 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
+-- Conteúdo
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
 ContentContainer.Size = UDim2.new(1, -20, 1, -150)
@@ -1108,6 +1096,10 @@ Canvas.Name = "Canvas"
 Canvas.Size = UDim2.new(1, 0, 0, 0)
 Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
+
+-- ═══════════════════════════════════════════════════════════════
+-- 11. CHECKBOXES (mantidas do original)
+-- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
 local allCheckboxStates = {}
@@ -1606,7 +1598,7 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. TOGGLE E ANIMAÇÕES
+-- 12. TOGGLE DO PAINEL
 -- ═══════════════════════════════════════════════════════════════
 
 local isOpen = true
@@ -1720,14 +1712,11 @@ end)
 
 -- ATUALIZAÇÃO DO RELÓGIO
 RunService.Heartbeat:Connect(function()
-    local t = ClockSystem:GetCurrentDateTime()
-    if t ~= DateTimeText.Text then
-        DateTimeText.Text = t
-    end
+    DateTimeText.Text = os.date("%H:%M %d/%m/%Y")
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. API GLOBAL
+-- 13. API GLOBAL
 -- ═══════════════════════════════════════════════════════════════
 
 _G.CarFlipper = {
@@ -1764,7 +1753,7 @@ _G.CarFlipper = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 15. ANIMAÇÃO DE ENTRADA
+-- 14. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 task.wait(0.1)
@@ -1778,10 +1767,10 @@ TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. FINAL
+-- 15. FINAL
 -- ═══════════════════════════════════════════════════════════════
 
-print("✅ Car Flipper - GomezXitado carregado!")
+print("✅ Car Flipper - GomezXitado carregado com sucesso!")
 print("📌 Clique no botão preto para abrir/fechar")
 print("⌨️  Tecla 'J' para abrir/fechar")
 print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
@@ -1791,4 +1780,4 @@ print("   🔍 Procura ESPECIFICAMENTE o botão 'Peças'")
 print("   📍 Teleporta até as peças")
 print("   📦 Coleta automaticamente")
 print("   🔄 Depois retorna à atividade anterior")
-print("✅ Removido fallback para 'Coletar' - APENAS 'Peças' agora")
+print("✅ Erro corrigido: Adicionadas verificações de segurança no início")
