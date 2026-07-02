@@ -792,4 +792,29 @@ _G.CarFlipper = {
     IsClaimCashRunning = function() return ClaimCashEnabled end,
     SetCashPosition = function(pos) CASH_POSITION = pos end,
     SetInterval = function(interval) ClaimCashInterval = interval end,
-    GetStatus = function() return StatusLabel and StatusLabel.Text
+    GetStatus = function() return StatusLabel and StatusLabel.Text or "" end,
+    SetStatus = function(text) if StatusLabel then StatusLabel.Text = text end end,
+}
+
+-- ═══════════════════════════════════════════════════════════════
+-- 21. ANIMAÇÃO DE ENTRADA
+-- ═══════════════════════════════════════════════════════════════
+
+task.wait(0.1)
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+task.wait(0.1)
+TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 920, 0, 560),
+    Position = UDim2.new(0.5, -460, 0.5, -280)
+}):Play()
+
+-- ═══════════════════════════════════════════════════════════════
+-- 22. FINAL
+-- ═══════════════════════════════════════════════════════════════
+
+print("✅ Car Flipper - GomezXitado carregado!")
+print("📌 Clique no botão preto para abrir/fechar")
+print("⌨️  Tecla 'J' para abrir/fechar")
+print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
