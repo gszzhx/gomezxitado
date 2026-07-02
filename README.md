@@ -1,7 +1,6 @@
 --[[
-    Car Flipper - Interface Premium
-    Design inspirado nas imagens de referência
-    Toggles centralizados
+    Car Flipper - Gomezxitado
+    Interface exatamente igual à imagem de referência
 ]]
 
 -- ============================================
@@ -10,9 +9,7 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 
 -- ============================================
 -- CONFIGURAÇÕES
@@ -24,7 +21,6 @@ local Config = {
         BackgroundTertiary = Color3.fromHex("141414"),
         Primary = Color3.fromHex("00FF88"),
         PrimaryDark = Color3.fromHex("00CC66"),
-        PrimaryLight = Color3.fromHex("33FF99"),
         Text = Color3.fromHex("FFFFFF"),
         TextSecondary = Color3.fromHex("88FFBB"),
         TextMuted = Color3.fromHex("445544"),
@@ -32,14 +28,11 @@ local Config = {
         Success = Color3.fromHex("00FF88"),
         Danger = Color3.fromHex("FF3366"),
         Warning = Color3.fromHex("FFAA00"),
-        Hover = Color3.fromHex("1A2A1A"),
     },
     Font = Enum.Font.Gotham,
     FontBold = Enum.Font.GothamBold,
     BlurEnabled = true,
-    SoundEnabled = true,
-    WindowTitle = "Car Flipper - Alexandria",
-    Version = "v1.3.0",
+    WindowTitle = "Car Flipper - Gomezxitado",
 }
 
 -- ============================================
@@ -64,16 +57,6 @@ local function CreateTween(object, properties, duration, style)
     local tweenInfo = TweenInfo.new(duration or 0.3, style)
     local tween = TweenService:Create(object, tweenInfo, properties)
     return tween
-end
-
-local function PlaySound()
-    if not Config.SoundEnabled then return end
-    local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://9120386751"
-    sound.Volume = 0.15
-    sound.Parent = MainFrame or game:GetService("CoreGui")
-    sound:Play()
-    game:GetService("Debris"):AddItem(sound, 1)
 end
 
 local function AddLog(text, color)
@@ -117,8 +100,8 @@ local function CreateUI()
     -- Main Frame
     MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.fromOffset(380, 520)
-    MainFrame.Position = UDim2.fromScale(0.5, 0.5) - UDim2.fromOffset(190, 260)
+    MainFrame.Size = UDim2.fromOffset(400, 520)
+    MainFrame.Position = UDim2.fromScale(0.5, 0.5) - UDim2.fromOffset(200, 260)
     MainFrame.BackgroundColor3 = Config.Theme.Background
     MainFrame.BackgroundTransparency = 0.95
     MainFrame.Parent = ScreenGui
@@ -161,31 +144,17 @@ local function CreateUI()
     HeaderCorner.CornerRadius = UDim.new(0, 8)
     HeaderCorner.Parent = Header
 
-    -- Título
+    -- Título (centralizado)
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
-    Title.Size = UDim2.fromScale(0.8, 1)
-    Title.Position = UDim2.fromOffset(12, 0)
+    Title.Size = UDim2.fromScale(1, 1)
     Title.BackgroundTransparency = 1
     Title.Text = Config.WindowTitle
     Title.TextColor3 = Config.Theme.Primary
-    Title.TextSize = 14
-    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextSize = 15
+    Title.TextXAlignment = Enum.TextXAlignment.Center
     Title.Font = Config.FontBold
     Title.Parent = Header
-
-    -- Version
-    local VersionLabel = Instance.new("TextLabel")
-    VersionLabel.Name = "VersionLabel"
-    VersionLabel.Size = UDim2.fromScale(0.2, 1)
-    VersionLabel.Position = UDim2.fromScale(0.8, 0)
-    VersionLabel.BackgroundTransparency = 1
-    VersionLabel.Text = Config.Version
-    VersionLabel.TextColor3 = Config.Theme.TextMuted
-    VersionLabel.TextSize = 10
-    VersionLabel.TextXAlignment = Enum.TextXAlignment.Right
-    VersionLabel.Font = Config.Font
-    VersionLabel.Parent = Header
 
     -- Botão Fechar
     local CloseButton = Instance.new("TextButton")
@@ -264,7 +233,7 @@ local function CreateUI()
     -- ============================================
     local ContentFrame = Instance.new("ScrollingFrame")
     ContentFrame.Name = "ContentFrame"
-    ContentFrame.Size = UDim2.fromScale(1, 0.61)
+    ContentFrame.Size = UDim2.fromScale(1, 0.62)
     ContentFrame.Position = UDim2.fromScale(0, 0.16)
     ContentFrame.BackgroundColor3 = Config.Theme.Background
     ContentFrame.BackgroundTransparency = 0.5
@@ -286,7 +255,7 @@ local function CreateUI()
     ContentLayout.Parent = ContentFrame
 
     -- ============================================
-    -- CATEGORIAS
+    -- CATEGORIAS (exatamente como na imagem)
     -- ============================================
     local Categories = {
         {
@@ -320,7 +289,7 @@ local function CreateUI()
     }
 
     -- ============================================
-    -- CRIAÇÃO DOS TOGGLES CENTRALIZADOS
+    -- CRIAÇÃO DOS TOGGLES (estilo imagem)
     -- ============================================
     local function CreateToggle(itemName, parent)
         local frame = Instance.new("Frame")
@@ -334,24 +303,24 @@ local function CreateUI()
         frameCorner.CornerRadius = UDim.new(0, 3)
         frameCorner.Parent = frame
 
-        -- Label (centralizado)
+        -- Label (com "-" na frente como na imagem)
         local label = Instance.new("TextLabel")
         label.Name = "Label"
-        label.Size = UDim2.fromScale(0.7, 1)
-        label.Position = UDim2.fromScale(0.15, 0)
+        label.Size = UDim2.fromScale(0.8, 1)
+        label.Position = UDim2.fromOffset(12, 0)
         label.BackgroundTransparency = 1
-        label.Text = itemName
+        label.Text = "- " .. itemName
         label.TextColor3 = Config.Theme.Text
         label.TextSize = 11
-        label.TextXAlignment = Enum.TextXAlignment.Center
+        label.TextXAlignment = Enum.TextXAlignment.Left
         label.Font = Config.Font
         label.Parent = frame
 
-        -- Toggle Button (centralizado)
+        -- Toggle Button (à direita como na imagem)
         local toggleBtn = Instance.new("TextButton")
         toggleBtn.Name = "ToggleButton"
-        toggleBtn.Size = UDim2.fromOffset(36, 18)
-        toggleBtn.Position = UDim2.fromScale(0.5, 0) - UDim2.fromOffset(18, 1)
+        toggleBtn.Size = UDim2.fromOffset(32, 16)
+        toggleBtn.Position = UDim2.fromScale(1, 0) - UDim2.fromOffset(38, 2)
         toggleBtn.BackgroundColor3 = Config.Theme.Background
         toggleBtn.Text = ""
         toggleBtn.Parent = frame
@@ -363,7 +332,7 @@ local function CreateUI()
         -- Indicator
         local toggleIndicator = Instance.new("Frame")
         toggleIndicator.Name = "Indicator"
-        toggleIndicator.Size = UDim2.fromOffset(12, 12)
+        toggleIndicator.Size = UDim2.fromOffset(10, 10)
         toggleIndicator.Position = UDim2.fromOffset(3, 3)
         toggleIndicator.BackgroundColor3 = Config.Theme.TextMuted
         toggleIndicator.BackgroundTransparency = 0.5
@@ -386,10 +355,8 @@ local function CreateUI()
                 BackgroundTransparency = state and 0 or 0.5
             }, 0.15):Play()
             CreateTween(toggleIndicator, {
-                Position = state and UDim2.fromOffset(21, 3) or UDim2.fromOffset(3, 3)
+                Position = state and UDim2.fromOffset(19, 3) or UDim2.fromOffset(3, 3)
             }, 0.2):Play()
-
-            PlaySound()
 
             local status = state and "✓" or "✗"
             AddLog(string.format("[%s] %s %s", CurrentTab, itemName, status), 
@@ -401,19 +368,6 @@ local function CreateUI()
             State = function() return state end,
             Toggle = UpdateToggle
         }
-
-        -- Hover effect
-        toggleBtn.MouseEnter:Connect(function()
-            if not state then
-                CreateTween(toggleBtn, {BackgroundColor3 = Config.Theme.Hover}, 0.1):Play()
-            end
-        end)
-
-        toggleBtn.MouseLeave:Connect(function()
-            if not state then
-                CreateTween(toggleBtn, {BackgroundColor3 = Config.Theme.Background}, 0.1):Play()
-            end
-        end)
 
         return frame
     end
@@ -428,7 +382,7 @@ local function CreateUI()
         end
 
         for _, category in ipairs(Categories) do
-            -- Categoria Label (centralizada)
+            -- Categoria Label (como na imagem)
             local catLabel = Instance.new("TextLabel")
             catLabel.Name = "CategoryLabel"
             catLabel.Size = UDim2.fromScale(1, 0.04)
@@ -436,18 +390,9 @@ local function CreateUI()
             catLabel.Text = category.Name
             catLabel.TextColor3 = Config.Theme.Primary
             catLabel.TextSize = 12
-            catLabel.TextXAlignment = Enum.TextXAlignment.Center
+            catLabel.TextXAlignment = Enum.TextXAlignment.Left
             catLabel.Font = Config.FontBold
             catLabel.Parent = ContentFrame
-
-            -- Separator (centralizado)
-            local sep = Instance.new("Frame")
-            sep.Name = "Separator"
-            sep.Size = UDim2.fromScale(0.8, 0.001)
-            sep.Position = UDim2.fromScale(0.1, 0)
-            sep.BackgroundColor3 = Config.Theme.Primary
-            sep.BackgroundTransparency = 0.5
-            sep.Parent = ContentFrame
 
             -- Items
             for _, itemName in ipairs(category.Items) do
@@ -464,7 +409,7 @@ local function CreateUI()
     local BottomBar = Instance.new("Frame")
     BottomBar.Name = "BottomBar"
     BottomBar.Size = UDim2.fromScale(1, 0.08)
-    BottomBar.Position = UDim2.fromScale(0, 0.77)
+    BottomBar.Position = UDim2.fromScale(0, 0.78)
     BottomBar.BackgroundColor3 = Config.Theme.BackgroundSecondary
     BottomBar.Parent = MainFrame
 
@@ -475,7 +420,7 @@ local function CreateUI()
     -- TextBox
     local TextInput = Instance.new("TextBox")
     TextInput.Name = "TextInput"
-    TextInput.Size = UDim2.fromScale(0.68, 0.7)
+    TextInput.Size = UDim2.fromScale(0.7, 0.7)
     TextInput.Position = UDim2.fromOffset(8, 5)
     TextInput.BackgroundColor3 = Config.Theme.BackgroundTertiary
     TextInput.Text = ""
@@ -499,10 +444,10 @@ local function CreateUI()
     -- Execute Button
     local ExecuteButton = Instance.new("TextButton")
     ExecuteButton.Name = "ExecuteButton"
-    ExecuteButton.Size = UDim2.fromScale(0.24, 0.7)
-    ExecuteButton.Position = UDim2.fromScale(0.74, 0.15)
+    ExecuteButton.Size = UDim2.fromScale(0.22, 0.7)
+    ExecuteButton.Position = UDim2.fromScale(0.76, 0.15)
     ExecuteButton.BackgroundColor3 = Config.Theme.Primary
-    ExecuteButton.Text = "Executar"
+    ExecuteButton.Text = "▶ Executar"
     ExecuteButton.TextColor3 = Config.Theme.Background
     ExecuteButton.TextSize = 11
     ExecuteButton.Font = Config.FontBold
@@ -517,8 +462,8 @@ local function CreateUI()
     -- ============================================
     local ConsoleFrame = Instance.new("Frame")
     ConsoleFrame.Name = "ConsoleFrame"
-    ConsoleFrame.Size = UDim2.fromScale(1, 0.15)
-    ConsoleFrame.Position = UDim2.fromScale(0, 0.85)
+    ConsoleFrame.Size = UDim2.fromScale(1, 0.14)
+    ConsoleFrame.Position = UDim2.fromScale(0, 0.86)
     ConsoleFrame.BackgroundColor3 = Config.Theme.BackgroundSecondary
     ConsoleFrame.Parent = MainFrame
 
@@ -531,7 +476,7 @@ local function CreateUI()
     ConsoleOutput.Size = UDim2.fromScale(1, 1)
     ConsoleOutput.Position = UDim2.fromOffset(8, 0)
     ConsoleOutput.BackgroundTransparency = 1
-    ConsoleOutput.Text = "> Script Loaded"
+    ConsoleOutput.Text = "> Script Loaded..."
     ConsoleOutput.TextColor3 = Config.Theme.TextMuted
     ConsoleOutput.TextSize = 9
     ConsoleOutput.TextXAlignment = Enum.TextXAlignment.Left
@@ -546,7 +491,6 @@ local function CreateUI()
 
     -- Fechar
     CloseButton.MouseButton1Click:Connect(function()
-        PlaySound()
         local tween = CreateTween(MainFrame, {
             BackgroundTransparency = 1,
             Size = UDim2.fromOffset(0, 0)
@@ -598,7 +542,6 @@ local function CreateUI()
                 button.BackgroundColor3 = name == tabName and Config.Theme.Primary or Config.Theme.BackgroundSecondary
                 button.TextColor3 = name == tabName and Config.Theme.Background or Config.Theme.TextSecondary
             end
-            PlaySound()
             AddLog("Tab: " .. tabName, Config.Theme.Primary)
         end)
     end
@@ -607,12 +550,10 @@ local function CreateUI()
     ExecuteButton.MouseButton1Click:Connect(function()
         local text = TextInput.Text
         if text ~= "" then
-            PlaySound()
             AddLog("▶ Executando: " .. text, Config.Theme.Primary)
             StatusLabel.Text = "[Car Flipper] Executing..."
             StatusLabel.TextColor3 = Config.Theme.Primary
 
-            -- Simulação
             task.wait(1.2)
             StatusLabel.Text = "[Car Flipper] Idle"
             StatusLabel.TextColor3 = Config.Theme.TextSecondary
@@ -643,7 +584,7 @@ local function CreateUI()
     task.wait(0.1)
     local openTween = CreateTween(MainFrame, {
         BackgroundTransparency = 0.05,
-        Size = UDim2.fromOffset(380, 520)
+        Size = UDim2.fromOffset(400, 520)
     }, 0.4, Enum.EasingStyle.Back)
     openTween:Play()
 
@@ -661,7 +602,6 @@ local function CreateUI()
             StatusLabel.TextColor3 = color or Config.Theme.TextSecondary
         end,
         GetToggles = function() return Toggles end,
-        Config = Config,
     }
 end
 
@@ -673,4 +613,4 @@ local UI = CreateUI()
 -- Exportar para uso global
 _G.CarFlipperUI = UI
 
-print("✅ Car Flipper Interface carregada com sucesso!")
+print("✅ Car Flipper - Gomezxitado carregado com sucesso!")
