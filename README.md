@@ -21,9 +21,11 @@ local HttpService = game:GetService("HttpService")
 -- 2. CONFIGURAÇÕES DO CLAIM CASH
 -- ═══════════════════════════════════════════════════════════════
 
--- Palavras-chave usadas para reconhecer o prompt/botão de coleta de dinheiro
--- (baseado no "E Dinheiro Coletar" que aparece perto do cofre no jogo)
-local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money", "coletar", "collect"}
+-- Palavra-chave principal: o texto "Dinheiro" que aparece no topo do prompt
+-- (ObjectText do ProximityPrompt do cofre, visto na sua imagem).
+-- "Coletar"/"collect" NÃO entram aqui de propósito, porque são genéricos
+-- demais e podem bater em outros botões do jogo (Claim Parts, Quests, etc).
+local MONEY_PROMPT_KEYWORDS = {"dinheiro", "cash", "money"}
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. TEMA
@@ -230,12 +232,20 @@ end
 
 -- Procura no workspace o ProximityPrompt de coleta de dinheiro
 -- (o "E  Dinheiro / Coletar" que aparece perto do cofre)
+-- Prioriza o ObjectText ("Dinheiro"), que é o texto específico do dinheiro,
+-- e só olha o ActionText como reforço (não usa "Coletar" sozinho).
 local function FindMoneyPrompt()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") then
-            if MatchesMoneyKeyword(obj.ObjectText) or MatchesMoneyKeyword(obj.ActionText) then
+            if MatchesMoneyKeyword(obj.ObjectText) then
                 return obj
             end
+        end
+    end
+    -- Se nenhum prompt tiver "Dinheiro" no ObjectText, tenta pelo ActionText também
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and MatchesMoneyKeyword(obj.ActionText) then
+            return obj
         end
     end
     return nil
@@ -945,9 +955,12 @@ for i, sectionData in ipairs(SectionsData) do
     divider.BorderSizePixel = 0
     divider.Parent = sectionContainer
 
-    local startY = 48
+    -- Espaço extra entre um item e o próximo (pedido: dar respiro entre
+    -- "Claim Cash" com o slider aberto e "Claim Parts" logo abaixo)
+    local ITEM_SPACING = 10
+
+    local yCursor = 48
     for j, item in ipairs(sectionData.items) do
-        local yPos = startY + ((j - 1) * 32)
         local hasSlider = false
         local labelText = item
 
@@ -957,19 +970,15 @@ for i, sectionData in ipairs(SectionsData) do
         end
 
         local name = labelText:gsub(" ", ""):gsub(",", ""):gsub("%.", ""):gsub("-", "")
-        CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yPos, hasSlider)
+        CreateCheckboxWithSlider(sectionContainer, name, labelText, 0, yCursor, hasSlider)
+
+        -- Avança o cursor pela altura REAL do item (70px se tiver slider, 30px se não)
+        -- mais o espaçamento extra, em vez de um passo fixo de 32px que não
+        -- considerava o slider e causava sobreposição.
+        yCursor = yCursor + (hasSlider and 70 or 30) + ITEM_SPACING
     end
 
-    -- Calcula a altura total do container com base nos itens (com ou sem slider)
-    local totalHeight = 48
-    for j, item in ipairs(sectionData.items) do
-        local hasSlider = false
-        if type(item) == "table" then
-            hasSlider = item.hasSlider or false
-        end
-        totalHeight = totalHeight + (hasSlider and 70 or 30)
-    end
-    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight + 16)
+    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, yCursor + 6)
 end
 
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
