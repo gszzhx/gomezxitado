@@ -3,6 +3,7 @@
     CAR FLIPPER - GOMEZXITADO
     Interface Premium com Layout Horizontal
     CORRIGIDO: Checkboxes e elementos visíveis
+    SINCRONIZADO: Relógio em Tempo Real
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -14,6 +15,8 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 -- ═══════════════════════════════════════════════════════════════
 -- 2. TEMA ESCURO (DARK THEME)
@@ -44,16 +47,80 @@ local Theme = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 3. CRIAÇÃO DA INTERFACE
+-- 3. SISTEMA DE RELÓGIO EM TEMPO REAL
 -- ═══════════════════════════════════════════════════════════════
 
--- 3.1 ScreenGui
+local ClockSystem = {
+    currentTime = "",
+    currentDate = "",
+}
+
+-- Função para obter data/hora atual
+function ClockSystem:GetCurrentDateTime()
+    -- Tenta obter hora do sistema
+    local success, result = pcall(function()
+        -- Usa HttpService para obter data/hora atual
+        local response = HttpService:GetAsync("https://worldtimeapi.org/api/timezone/America/Sao_Paulo")
+        if response then
+            local data = HttpService:JSONDecode(response)
+            if data and data.datetime then
+                local datetime = data.datetime
+                -- Formato: 2026-07-01T22:13:00.000-03:00
+                local parts = {}
+                for part in string.gmatch(datetime, "[^T]+") do
+                    table.insert(parts, part)
+                end
+                
+                if #parts >= 2 then
+                    local datePart = parts[1] -- 2026-07-01
+                    local timePart = string.sub(parts[2], 1, 5) -- 22:13
+                    
+                    -- Formata a data
+                    local dateFormatted = string.gsub(datePart, "(%d+)-(%d+)-(%d+)", "%3/%2/%1")
+                    
+                    return timePart .. " " .. dateFormatted
+                end
+            end
+        end
+    end)
+    
+    -- Fallback para hora local do Roblox
+    if not success or not result then
+        local currentTime = os.time()
+        local dateTable = os.date("*t", currentTime)
+        local hour = string.format("%02d", dateTable.hour)
+        local min = string.format("%02d", dateTable.min)
+        local day = string.format("%02d", dateTable.day)
+        local month = string.format("%02d", dateTable.month)
+        local year = dateTable.year
+        
+        return hour .. ":" .. min .. " " .. day .. "/" .. month .. "/" .. year
+    end
+    
+    return result
+end
+
+-- Atualizar relógio
+function ClockSystem:UpdateClock()
+    local newTime = self:GetCurrentDateTime()
+    if newTime ~= self.currentTime then
+        self.currentTime = newTime
+        return true
+    end
+    return false
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- 4. CRIAÇÃO DA INTERFACE
+-- ═══════════════════════════════════════════════════════════════
+
+-- 4.1 ScreenGui
 local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "CarFlipperGUI"
 MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MainGui.ResetOnSpawn = false
 
--- 3.2 MainFrame (Janela Principal - Horizontal)
+-- 4.2 MainFrame (Janela Principal - Horizontal)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 920, 0, 560)
@@ -72,7 +139,7 @@ MainStroke.Color = Theme.Border
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
--- 3.3 Sombra
+-- 4.3 Sombra
 local Shadow = Instance.new("Frame")
 Shadow.Name = "Shadow"
 Shadow.Size = UDim2.new(1, 20, 1, 20)
@@ -87,7 +154,7 @@ ShadowCorner.CornerRadius = UDim.new(0, 18)
 ShadowCorner.Parent = Shadow
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. BARRA DE TÍTULO
+-- 5. BARRA DE TÍTULO
 -- ═══════════════════════════════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
@@ -104,7 +171,7 @@ TitleCorner.Parent = TitleBar
 -- Título
 local TitleText = Instance.new("TextLabel")
 TitleText.Name = "Title"
-TitleText.Size = UDim2.new(0.5, -18, 1, 0)
+TitleText.Size = UDim2.new(0.65, -18, 1, 0)
 TitleText.Position = UDim2.new(0, 18, 0, 0)
 TitleText.BackgroundTransparency = 1
 TitleText.Text = "Car Flipper - GomezXitado"
@@ -115,29 +182,15 @@ TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.TextYAlignment = Enum.TextYAlignment.Center
 TitleText.Parent = TitleBar
 
--- Valor em dinheiro
-local MoneyText = Instance.new("TextLabel")
-MoneyText.Name = "MoneyText"
-MoneyText.Size = UDim2.new(0.25, -20, 1, 0)
-MoneyText.Position = UDim2.new(0.5, 0, 0, 0)
-MoneyText.BackgroundTransparency = 1
-MoneyText.Text = "1,662,627$"
-MoneyText.TextColor3 = Theme.Gold
-MoneyText.TextSize = 16
-MoneyText.Font = Enum.Font.GothamBold
-MoneyText.TextXAlignment = Enum.TextXAlignment.Right
-MoneyText.TextYAlignment = Enum.TextYAlignment.Center
-MoneyText.Parent = TitleBar
-
--- Data/Hora
+-- Data/Hora (atualizado em tempo real)
 local DateTimeText = Instance.new("TextLabel")
 DateTimeText.Name = "DateTimeText"
-DateTimeText.Size = UDim2.new(0.2, -10, 1, 0)
-DateTimeText.Position = UDim2.new(0.75, 0, 0, 0)
+DateTimeText.Size = UDim2.new(0.35, -10, 1, 0)
+DateTimeText.Position = UDim2.new(0.65, 0, 0, 0)
 DateTimeText.BackgroundTransparency = 1
-DateTimeText.Text = "22:13 01/07/2026"
+DateTimeText.Text = "00:00 00/00/0000"
 DateTimeText.TextColor3 = Theme.TextMuted
-DateTimeText.TextSize = 12
+DateTimeText.TextSize = 14
 DateTimeText.Font = Enum.Font.Gotham
 DateTimeText.TextXAlignment = Enum.TextXAlignment.Right
 DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
@@ -185,7 +238,7 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. ABA AUTO
+-- 6. ABA AUTO
 -- ═══════════════════════════════════════════════════════════════
 
 local TabContainer = Instance.new("Frame")
@@ -213,7 +266,7 @@ AutoTabCorner.CornerRadius = UDim.new(0, 8)
 AutoTabCorner.Parent = AutoTab
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. STATUS
+-- 7. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
 local StatusLabel = Instance.new("TextLabel")
@@ -230,7 +283,7 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. CONTAINER DE CONTEÚDO
+-- 8. CONTAINER DE CONTEÚDO
 -- ═══════════════════════════════════════════════════════════════
 
 local ContentContainer = Instance.new("Frame")
@@ -248,7 +301,7 @@ Canvas.BackgroundTransparency = 1
 Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. SISTEMA DE CHECKBOX
+-- 9. SISTEMA DE CHECKBOX
 -- ═══════════════════════════════════════════════════════════════
 
 local Checkboxes = {}
@@ -356,7 +409,7 @@ function CreateCheckbox(parent, name, label, xPos, yPos)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. CONSTRUÇÃO DAS SEÇÕES
+-- 10. CONSTRUÇÃO DAS SEÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 -- Dados das seções
@@ -461,7 +514,7 @@ end
 Canvas.Size = UDim2.new(0, totalWidth, 0, 380)
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. SISTEMA DE ARRASTAR
+-- 11. SISTEMA DE ARRASTAR
 -- ═══════════════════════════════════════════════════════════════
 
 local Dragging = false
@@ -501,7 +554,36 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 11. ANIMAÇÃO DE ENTRADA
+-- 12. ATUALIZAÇÃO EM TEMPO REAL - RELÓGIO
+-- ═══════════════════════════════════════════════════════════════
+
+local lastClockUpdate = 0
+local clockUpdateInterval = 1.0 -- Atualiza o relógio a cada 1 segundo
+
+-- Função principal de atualização
+local function UpdateGUI()
+    local currentTime = tick()
+    
+    -- Atualiza relógio
+    if currentTime - lastClockUpdate >= clockUpdateInterval then
+        local newDateTime = ClockSystem:GetCurrentDateTime()
+        if newDateTime ~= ClockSystem.currentTime then
+            ClockSystem.currentTime = newDateTime
+            DateTimeText.Text = newDateTime
+        end
+        lastClockUpdate = currentTime
+    end
+end
+
+-- Loop de atualização
+RunService.Heartbeat:Connect(UpdateGUI)
+
+-- Atualização inicial
+task.wait(0.5)
+DateTimeText.Text = ClockSystem:GetCurrentDateTime()
+
+-- ═══════════════════════════════════════════════════════════════
+-- 13. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
 MainFrame.Size = UDim2.new(0, 920, 0, 0)
@@ -515,7 +597,7 @@ TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.Ea
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. API PÚBLICA
+-- 14. API PÚBLICA
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
@@ -529,11 +611,12 @@ local CarFlipperAPI = {
         StatusLabel.Text = "[Car Flipper] Idle"
     end,
     
-    GetMoney = function()
-        return MoneyText.Text
+    GetTime = function()
+        return DateTimeText.Text
     end,
-    SetMoney = function(value)
-        MoneyText.Text = tostring(value) .. "$"
+    RefreshClock = function()
+        DateTimeText.Text = ClockSystem:GetCurrentDateTime()
+        return DateTimeText.Text
     end,
     
     GetCheckbox = function(name)
@@ -585,11 +668,12 @@ local CarFlipperAPI = {
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. TESTE - MOSTRAR CHECKBOXES VISÍVEIS
+-- 15. TESTE - MOSTRAR CHECKBOXES VISÍVEIS
 -- ═══════════════════════════════════════════════════════════════
 
 print("✅ Car Flipper - GomezXitado carregado com sucesso!")
 print("📐 Layout Horizontal - Checkboxes visíveis")
+print("🕐 Sistema de relógio em tempo real ativo")
 print("📌 Use _G.CarFlipper para controlar a interface")
 
 -- Forçar atualização visual
@@ -597,3 +681,6 @@ task.wait(0.5)
 for name, cb in pairs(Checkboxes) do
     print("Checkbox carregado:", name)
 end
+
+-- Status inicial
+CarFlipperAPI.SetStatus("[Car Flipper] Aguardando ações...")
