@@ -1,7 +1,7 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM PARTS CORRIGIDO
-    Procura o botão "Peças", teleporta e coleta automaticamente
+    CAR FLIPPER - GOMEZXITADO - SISTEMA CLAIM PARTS
+    Procura ESPECIFICAMENTE o botão "Peças", teleporta e coleta
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -142,7 +142,7 @@ function InterruptionSystem:Interrupt(taskName, callback)
     
     UpdateStatus(string.format("[Car Flipper] ⚠️ INTERROMPIDO: %s", taskName or "Coleta"))
     return true
-end
+}
 
 function InterruptionSystem:Resume()
     if not self.isInterrupted then
@@ -171,17 +171,16 @@ function InterruptionSystem:GetInterruptedTask()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. SISTEMA CLAIM PARTS (CORRIGIDO)
+-- 7. SISTEMA CLAIM PARTS - ESPECIFICAMENTE "PEÇAS"
 -- ═══════════════════════════════════════════════════════════════
 
 local ClaimParts = {
     enabled = false,
-    interval = 102,
+    interval = 102, -- 1 minuto e 42 segundos
     task = nil,
     isRunning = false,
     collectRadius = 50,
     isCollecting = false,
-    partsLocation = nil, -- Armazena a localização das peças
 }
 
 -- ═══════════════════════════════════════════════════════════════
@@ -197,20 +196,18 @@ local ClaimCash = {
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. FUNÇÕES DE COLETA DE PEÇAS (CORRIGIDAS)
+-- 9. FUNÇÕES DE COLETA DE PEÇAS - ESPECIFICAMENTE "PEÇAS"
 -- ═══════════════════════════════════════════════════════════════
 
--- Procura o botão "Peças" ou "Coletar" na interface
+-- Procura ESPECIFICAMENTE o botão "Peças" na interface
 local function FindPartsButton()
     local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
 
-    -- Lista de textos que indicam botão de peças
+    -- APENAS "Peças" e suas variações, NÃO "Coletar"
     local partsTexts = {
         "Peças", "Pecas", "peças", "pecas", 
         "PARTES", "Partes", "partes",
-        "COLETAR", "Coletar", "coletar",
-        "COLLECT", "Collect", "collect",
         "PEÇAS", "PECAS"
     }
     
@@ -232,7 +229,7 @@ local function FindPartsButton()
                                 local labelText = child.Text or ""
                                 for _, partsText in ipairs(partsTexts) do
                                     if labelText:find(partsText) then
-                                        print("🔧 Botão encontrado via TextLabel: " .. labelText)
+                                        print("🔧 Botão 'Peças' encontrado via TextLabel: " .. labelText)
                                         return descendant
                                     end
                                 end
@@ -258,7 +255,7 @@ local function FindPartsButton()
                             local parent = descendant.Parent
                             while parent do
                                 if parent:IsA("TextButton") or parent:IsA("ImageButton") then
-                                    print("🔧 Botão encontrado via TextLabel pai: " .. labelText)
+                                    print("🔧 Botão 'Peças' encontrado via TextLabel pai: " .. labelText)
                                     return parent
                                 end
                                 parent = parent.Parent
@@ -281,21 +278,19 @@ local function FindPartsLocation()
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return partsLocations end
 
-    -- Palavras-chave para encontrar peças
+    -- Palavras-chave específicas para peças
     local partsKeywords = {
         "peça", "parts", "part", "peca", 
         "component", "engrenagem", "gear", 
-        "item", "coletar", "collect",
-        "caixa", "box", "chest", "baú",
+        "item", "caixa", "box", "chest", "baú",
         "recompensa", "reward", "prêmio"
     }
     
-    -- Primeiro, procura por modelos com nomes específicos
+    -- Procura por objetos de peças
     for _, obj in ipairs(workspace:GetDescendants()) do
         local isPart = false
         local objName = obj.Name:lower()
         
-        -- Verifica se é um objeto de peças
         for _, keyword in ipairs(partsKeywords) do
             if objName:find(keyword) then
                 isPart = true
@@ -303,7 +298,6 @@ local function FindPartsLocation()
             end
         end
         
-        -- Se for um objeto de peças, pega sua posição
         if isPart and (obj:IsA("Part") or obj:IsA("Model") or obj:IsA("BasePart") or obj:IsA("MeshPart")) then
             local position = nil
             if obj:IsA("Model") and obj.PrimaryPart then
@@ -336,8 +330,7 @@ local function FindPartsPrompt()
     local partsTexts = {
         "Peças", "Pecas", "peças", "pecas", 
         "PARTES", "Partes", "partes",
-        "COLETAR", "Coletar", "coletar",
-        "COLLECT", "Collect", "collect"
+        "PEÇAS", "PECAS"
     }
     
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -345,7 +338,6 @@ local function FindPartsPrompt()
             local objText = obj.ObjectText or ""
             local actionText = obj.ActionText or ""
             
-            -- Verifica se o prompt tem algum texto relacionado a peças
             for _, partsText in ipairs(partsTexts) do
                 if objText:find(partsText) or actionText:find(partsText) then
                     print("🔧 Prompt 'Peças' encontrado: " .. objText)
@@ -365,12 +357,11 @@ local function TeleportToParts(position)
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return false end
 
-    -- Verifica se a posição é válida
     if not position then
         return false
     end
 
-    -- Teleporta o jogador para perto do alvo (com offset aleatório)
+    -- Teleporta o jogador para perto do alvo
     local cframe = CFrame.new(
         position.X + math.random(-3, 3),
         position.Y + 2,
@@ -378,7 +369,7 @@ local function TeleportToParts(position)
     )
     
     humanoidRootPart.CFrame = cframe
-    UpdateStatus(string.format("[Car Flipper] 📍 Teleportado para as peças em (%.1f, %.1f, %.1f)", position.X, position.Y, position.Z))
+    UpdateStatus(string.format("[Car Flipper] 📍 Teleportado para as peças"))
     task.wait(0.3)
     
     return true
@@ -389,16 +380,13 @@ local function SafeClickButton(button)
     if not button then return false end
     
     local success = pcall(function()
-        -- Tenta diferentes métodos de clique
         if button:IsA("TextButton") or button:IsA("ImageButton") then
-            -- Método 1: Click()
             button:Click()
             return true
         end
     end)
     
     if not success then
-        -- Método 2: Simula clique via InputBegan
         pcall(function()
             local input = {
                 UserInputType = Enum.UserInputType.MouseButton1,
@@ -414,7 +402,7 @@ local function SafeClickButton(button)
     return true
 end
 
--- Função principal de coleta de peças (CORRIGIDA)
+-- Função principal de coleta de peças - APENAS "PEÇAS"
 local function CollectParts()
     if not ClaimParts.enabled then 
         return false 
@@ -436,7 +424,7 @@ local function CollectParts()
     
     local success = false
     
-    -- 1. PRIMEIRO: Procura o botão "Peças" na interface
+    -- 1. PRIMEIRO: Procura ESPECIFICAMENTE o botão "Peças" na interface
     UpdateStatus("[Car Flipper] 🔧 Procurando botão 'Peças'...")
     local partsButton = FindPartsButton()
     if partsButton then
@@ -490,16 +478,13 @@ local function CollectParts()
         if #partsLocations > 0 then
             UpdateStatus(string.format("[Car Flipper] 🔧 Encontradas %d peças", #partsLocations))
             
-            -- Teleporta para a peça mais próxima
             local nearest = partsLocations[1]
             if nearest and nearest.position then
                 TeleportToParts(nearest.position)
                 
-                -- Tenta coletar a peça
                 local objectSuccess = pcall(function()
                     local obj = nearest.object
                     
-                    -- Tenta ClickDetector
                     local clickDetector = obj:FindFirstChild("ClickDetector")
                     if clickDetector then
                         clickDetector:Click()
@@ -507,7 +492,6 @@ local function CollectParts()
                         return
                     end
                     
-                    -- Tenta ProximityPrompt
                     local proximityPrompt = obj:FindFirstChild("ProximityPrompt")
                     if proximityPrompt then
                         proximityPrompt:InputHold()
@@ -517,7 +501,6 @@ local function CollectParts()
                         return
                     end
                     
-                    -- Tenta Tool
                     local tool = obj:FindFirstChild("Tool")
                     if tool then
                         local backpack = LocalPlayer:FindFirstChild("Backpack")
@@ -528,7 +511,6 @@ local function CollectParts()
                         end
                     end
                     
-                    -- Tenta Touch
                     if obj:IsA("BasePart") then
                         local char = LocalPlayer.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
@@ -540,7 +522,6 @@ local function CollectParts()
                         end
                     end
                     
-                    -- Tenta destruir o objeto
                     if obj:IsA("BasePart") or obj:IsA("Model") then
                         obj:Destroy()
                         print("✅ Peça coletada (destruída)")
@@ -556,40 +537,10 @@ local function CollectParts()
         end
     end
 
-    -- 4. QUARTO: Procura por qualquer coisa com "Coletar" ou "Collect"
-    if not success then
-        UpdateStatus("[Car Flipper] 🔧 Procurando por 'Coletar'...")
-        
-        -- Procura em todos os ScreenGuis por qualquer botão com "Coletar"
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if playerGui then
-            for _, gui in ipairs(playerGui:GetChildren()) do
-                if gui:IsA("ScreenGui") then
-                    for _, btn in ipairs(gui:GetDescendants()) do
-                        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-                            local btnText = pcall(function() return btn.Text end)
-                            if btnText and type(btnText) == "string" then
-                                local lowerText = btnText:lower()
-                                if lowerText:find("coletar") or lowerText:find("collect") or 
-                                   lowerText:find("pegar") or lowerText:find("reivindicar") or
-                                   lowerText:find("claim") then
-                                    UpdateStatus("[Car Flipper] 🔧 Botão 'Coletar' encontrado!")
-                                    SafeClickButton(btn)
-                                    UpdateStatus("[Car Flipper] ✅ Coletado via botão genérico!")
-                                    success = true
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-                if success then break end
-            end
-        end
-    end
+    -- NOTA: Removido o fallback para "Coletar" - APENAS "Peças" agora
 
     if not success then
-        UpdateStatus("[Car Flipper] ❌ Nenhuma peça encontrada...")
+        UpdateStatus("[Car Flipper] ❌ Nenhum botão 'Peças' encontrado...")
     end
 
     -- RESUME A ATIVIDADE ANTERIOR
@@ -610,7 +561,6 @@ local function ClaimPartsLoop()
             UpdateStatus("[Car Flipper] 🔧 Iniciando coleta de peças...")
             local collectSuccess = false
             
-            -- Tenta coletar com múltiplas tentativas
             for attempt = 1, 3 do
                 collectSuccess = CollectParts()
                 if collectSuccess then 
@@ -620,7 +570,6 @@ local function ClaimPartsLoop()
             end
         end
 
-        -- Mostra o tempo até a próxima coleta
         local waitTime = ClaimParts.interval
         local minutes = math.floor(waitTime / 60)
         local seconds = waitTime % 60
@@ -631,7 +580,6 @@ local function ClaimPartsLoop()
             UpdateStatus(string.format("[Car Flipper] ⏱️ Próxima coleta em %ds", seconds))
         end
 
-        -- Aguarda o intervalo (1m42s)
         local startTime = tick()
         while ClaimParts.enabled and ClaimParts.isRunning and (tick() - startTime) < waitTime do
             task.wait(0.1)
@@ -683,7 +631,7 @@ local function ToggleClaimParts()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. FUNÇÕES DE COLETA DE DINHEIRO (modificadas)
+-- 10. FUNÇÕES DE COLETA DE DINHEIRO (mantidas)
 -- ═══════════════════════════════════════════════════════════════
 
 local function MatchesMoneyKeyword(text)
@@ -1046,7 +994,7 @@ function ClockSystem:GetCurrentDateTime()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 12. BOTÃO FLUTUANTE E INTERFACE (Mantido igual)
+-- 12. BOTÃO FLUTUANTE E INTERFACE
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
@@ -1071,7 +1019,7 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleButton
 
--- Interface Principal
+-- Interface Principal (mantida igual, apenas as seções)
 local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "CarFlipperGUI"
 MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -1097,7 +1045,6 @@ MainStroke.Color = Theme.Border
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
--- Barra de Título
 local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 48)
@@ -1135,7 +1082,6 @@ DateTimeText.TextXAlignment = Enum.TextXAlignment.Right
 DateTimeText.TextYAlignment = Enum.TextYAlignment.Center
 DateTimeText.Parent = TitleBar
 
--- Status
 StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
@@ -1149,7 +1095,6 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
--- Checkboxes e interface (mantido igual)
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
 ContentContainer.Size = UDim2.new(1, -20, 1, -150)
@@ -1842,8 +1787,8 @@ print("⌨️  Tecla 'J' para abrir/fechar")
 print("💰 Ative 'Claim Cash' para coletar dinheiro automático")
 print("🔧 Ative 'Claim Parts' para coletar peças automático (1m42s)")
 print("   🔴 INTERROMPE TOTALMENTE qualquer atividade")
-print("   🔍 Procura botão 'Peças' e 'Coletar'")
+print("   🔍 Procura ESPECIFICAMENTE o botão 'Peças'")
 print("   📍 Teleporta até as peças")
 print("   📦 Coleta automaticamente")
 print("   🔄 Depois retorna à atividade anterior")
-print("✅ Erros corrigidos: Text/ImageButton e format com nil")
+print("✅ Removido fallback para 'Coletar' - APENAS 'Peças' agora")
