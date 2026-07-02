@@ -6,6 +6,19 @@
 --]]
 
 -- ═══════════════════════════════════════════════════════════════
+-- 0. INICIALIZAÇÃO SEGURA (CORRIGIDO)
+-- ═══════════════════════════════════════════════════════════════
+
+-- Verifica se o script já foi carregado para evitar duplicação
+if _G.CarFlipperLoaded then
+    print("⚠️ Car Flipper já está carregado!")
+    return
+end
+
+-- Marca como carregado
+_G.CarFlipperLoaded = true
+
+-- ═══════════════════════════════════════════════════════════════
 -- 1. CONFIGURAÇÕES E IMPORTAÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
@@ -1911,4 +1924,4 @@ print("   🔍 Procura botão 'Peças' e 'Coletar'")
 print("   📍 Teleporta até as peças")
 print("   📦 Coleta automaticamente")
 print("   🔄 Depois retorna à atividade anterior")
-print("✅ Erros corrigidos: Text/ImageButton e format com nil")
+print("✅ Erros corrigidos: Text/ImageButton, format com nil e linha 1")
