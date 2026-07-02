@@ -1,47 +1,13 @@
 --[[
     ═══════════════════════════════════════════════════════════════
-    Car Flipper - GomezXitado
-    Interface Profissional com Tema Escuro
-    Versão: 1.0.0
-    ═══════════════════════════════════════════════════════════════
-    
-    ESTRUTURA:
-    • ScreenGui (Principal)
-    │   ├── MainFrame (Janela Principal)
-    │   │   ├── TitleBar (Barra de Título)
-    │   │   │   ├── Title (Texto do Título)
-    │   │   │   └── CloseButton (Botão Fechar)
-    │   │   ├── TabContainer (Container de Abas)
-    │   │   │   ├── AutoTab (Aba Auto)
-    │   │   │   └── RunOnceTab (Aba Run Once)
-    │   │   ├── SearchBox (Campo de Pesquisa)
-    │   │   │   ├── TextBox (Entrada de Texto)
-    │   │   │   └── SendButton (Botão Enviar)
-    │   │   ├── StatusLabel (Label de Status)
-    │   │   ├── SectionDivider (Divisor de Seção)
-    │   │   ├── BaseSection (Seção Base)
-    │   │   │   ├── ClaimCash (Checkbox)
-    │   │   │   ├── ClaimParts (Checkbox)
-    │   │   │   ├── BuyUpgrades (Checkbox)
-    │   │   │   ├── ClaimContainers (Checkbox)
-    │   │   │   ├── OpenContainers (Checkbox)
-    │   │   │   ├── ClaimQuests (Checkbox)
-    │   │   │   └── DeliverJunk (Checkbox)
-    │   │   ├── CarsSection (Seção Cars)
-    │   │   │   ├── FixCars (Checkbox)
-    │   │   │   ├── SellFixedCars (Checkbox)
-    │   │   │   ├── UpdateStands (Checkbox)
-    │   │   │   └── BuyFixSellCheapest (Checkbox)
-    │   │   └── RewardsSection (Seção Rewards)
-    │   │       ├── ClaimPlaytimeRewards (Checkbox)
-    │   │       └── ClaimDailyRewards (Checkbox)
-    └── (UI Components: UICorner, UIStroke, UIPadding)
-    
+    CAR FLIPPER - GOMEZXITADO
+    Interface com Layout Horizontal (Base Retangular)
+    Design Moderno com Abas e Checkboxes
     ═══════════════════════════════════════════════════════════════
 --]]
 
 -- ═══════════════════════════════════════════════════════════════
--- 1. CONFIGURAÇÕES E CONSTANTES
+-- 1. CONFIGURAÇÕES E IMPORTAÇÕES
 -- ═══════════════════════════════════════════════════════════════
 
 local Players = game:GetService("Players")
@@ -49,291 +15,281 @@ local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- Cores do Tema (Dark Theme)
-local COLORS = {
-    Background = Color3.fromRGB(20, 20, 25),
-    Frame = Color3.fromRGB(30, 30, 38),
-    TitleBar = Color3.fromRGB(40, 40, 48),
-    Text = Color3.fromRGB(220, 220, 230),
-    TextDim = Color3.fromRGB(150, 150, 165),
+-- ═══════════════════════════════════════════════════════════════
+-- 2. TEMA ESCURO (DARK THEME)
+-- ═══════════════════════════════════════════════════════════════
+
+local Theme = {
+    Background = Color3.fromRGB(18, 18, 24),
+    Surface = Color3.fromRGB(28, 28, 36),
+    SurfaceLight = Color3.fromRGB(38, 38, 48),
+    SurfaceLighter = Color3.fromRGB(48, 48, 58),
+    
+    TextPrimary = Color3.fromRGB(235, 235, 245),
+    TextSecondary = Color3.fromRGB(175, 175, 190),
+    TextMuted = Color3.fromRGB(120, 120, 140),
+    
     Accent = Color3.fromRGB(255, 200, 50),
     AccentHover = Color3.fromRGB(255, 215, 75),
-    CheckboxBG = Color3.fromRGB(45, 45, 55),
-    CheckboxChecked = Color3.fromRGB(255, 200, 50),
-    Border = Color3.fromRGB(60, 60, 75),
-    Divider = Color3.fromRGB(50, 50, 62),
+    
+    Border = Color3.fromRGB(55, 55, 70),
+    Divider = Color3.fromRGB(42, 42, 55),
     Shadow = Color3.fromRGB(0, 0, 0),
-    SearchBox = Color3.fromRGB(38, 38, 48),
+    
+    CheckboxBG = Color3.fromRGB(45, 45, 58),
+    CheckboxChecked = Color3.fromRGB(255, 200, 50),
+    InputBG = Color3.fromRGB(35, 35, 45),
+    
+    Danger = Color3.fromRGB(220, 60, 60),
 }
 
 -- ═══════════════════════════════════════════════════════════════
--- 2. CRIAÇÃO DO GUI PRINCIPAL
+-- 3. CRIAÇÃO DA INTERFACE
 -- ═══════════════════════════════════════════════════════════════
 
--- 2.1 ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CarFlipperGUI"
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
+-- 3.1 ScreenGui
+local MainGui = Instance.new("ScreenGui")
+MainGui.Name = "CarFlipperGUI"
+MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+MainGui.ResetOnSpawn = false
 
--- 2.2 MainFrame (Janela Principal)
+-- 3.2 MainFrame (Janela Principal - Horizontal)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 420, 0, 580)
-MainFrame.Position = UDim2.new(0.5, -210, 0.5, -290)
-MainFrame.BackgroundColor3 = COLORS.Background
-MainFrame.BackgroundTransparency = 0
-MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 900, 0, 520)  -- Largura maior, altura menor (horizontal)
+MainFrame.Position = UDim2.new(0.5, -450, 0.5, -260)
+MainFrame.BackgroundColor3 = Theme.Background
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = MainGui
 
--- Sombra (Shadow)
+-- Corner da MainFrame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = MainFrame
+
+-- Stroke da MainFrame
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Theme.Border
+MainStroke.Thickness = 1.5
+MainStroke.Parent = MainFrame
+
+-- 3.3 Sombra
 local Shadow = Instance.new("Frame")
 Shadow.Name = "Shadow"
-Shadow.Size = UDim2.new(1, 12, 1, 12)
-Shadow.Position = UDim2.new(0, -6, 0, -6)
-Shadow.BackgroundColor3 = COLORS.Shadow
-Shadow.BackgroundTransparency = 0.6
+Shadow.Size = UDim2.new(1, 20, 1, 20)
+Shadow.Position = UDim2.new(0, -10, 0, -10)
+Shadow.BackgroundColor3 = Theme.Shadow
+Shadow.BackgroundTransparency = 0.5
 Shadow.BorderSizePixel = 0
 Shadow.Parent = MainFrame
 
 local ShadowCorner = Instance.new("UICorner")
-ShadowCorner.CornerRadius = UDim.new(0, 14)
+ShadowCorner.CornerRadius = UDim.new(0, 18)
 ShadowCorner.Parent = Shadow
 
--- 2.3 UI Components (MainFrame)
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainFrame
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = COLORS.Border
-MainStroke.Thickness = 1
-MainStroke.Parent = MainFrame
-
 -- ═══════════════════════════════════════════════════════════════
--- 3. BARRA DE TÍTULO (TITLE BAR)
+-- 4. BARRA DE TÍTULO
 -- ═══════════════════════════════════════════════════════════════
 
--- 3.1 TitleBar
 local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 44)
-TitleBar.BackgroundColor3 = COLORS.TitleBar
-TitleBar.BackgroundTransparency = 0
+TitleBar.Size = UDim2.new(1, 0, 0, 48)
+TitleBar.BackgroundColor3 = Theme.SurfaceLight
+TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
 
-local TitleBarCorner = Instance.new("UICorner")
-TitleBarCorner.CornerRadius = UDim.new(0, 12)
-TitleBarCorner.Parent = TitleBar
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 14)
+TitleCorner.Parent = TitleBar
 
--- 3.2 Title
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, -50, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "Car Flipper - GomezXitado"
-Title.TextColor3 = COLORS.Text
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamSemibold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.TextYAlignment = Enum.TextYAlignment.Center
-Title.Parent = TitleBar
+-- Título
+local TitleText = Instance.new("TextLabel")
+TitleText.Name = "Title"
+TitleText.Size = UDim2.new(1, -60, 1, 0)
+TitleText.Position = UDim2.new(0, 18, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.Text = "Car Flipper - GomezXitado"
+TitleText.TextColor3 = Theme.TextPrimary
+TitleText.TextSize = 17
+TitleText.Font = Enum.Font.GothamSemibold
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.TextYAlignment = Enum.TextYAlignment.Center
+TitleText.Parent = TitleBar
 
--- 3.3 CloseButton (X)
-local CloseButton = Instance.new("ImageButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -38, 0.5, -15)
-CloseButton.BackgroundColor3 = COLORS.TitleBar
-CloseButton.BackgroundTransparency = 0.5
-CloseButton.Image = "rbxassetid://10747329800" -- Ícone X
-CloseButton.ImageColor3 = COLORS.TextDim
-CloseButton.Parent = TitleBar
+-- Botão Fechar
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Size = UDim2.new(0, 34, 0, 34)
+CloseBtn.Position = UDim2.new(1, -44, 0.5, -17)
+CloseBtn.BackgroundColor3 = Theme.SurfaceLight
+CloseBtn.BackgroundTransparency = 0
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Theme.TextSecondary
+CloseBtn.TextSize = 18
+CloseBtn.Font = Enum.Font.Gotham
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Parent = TitleBar
 
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(1, 0)
-CloseCorner.Parent = CloseButton
+CloseCorner.Parent = CloseBtn
 
--- Tween para CloseButton
-CloseButton.MouseEnter:Connect(function()
-    TweenService:Create(CloseButton, TweenInfo.new(0.15), {
-        BackgroundColor3 = Color3.fromRGB(200, 40, 40),
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.MouseEnter:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
+        BackgroundColor3 = Theme.Danger,
+        TextColor3 = Color3.fromRGB(255, 255, 255)
     }):Play()
 end)
 
-CloseButton.MouseLeave:Connect(function()
-    TweenService:Create(CloseButton, TweenInfo.new(0.15), {
-        BackgroundColor3 = COLORS.TitleBar,
-        ImageColor3 = COLORS.TextDim
+CloseBtn.MouseLeave:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
+        BackgroundColor3 = Theme.SurfaceLight,
+        TextColor3 = Theme.TextSecondary
     }):Play()
 end)
 
-CloseButton.MouseButton1Click:Connect(function()
-    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-        Size = UDim2.new(0, 420, 0, 0),
-        Position = UDim2.new(0.5, -210, 0.5, 0)
+CloseBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+        Size = UDim2.new(0, 900, 0, 0),
+        Position = UDim2.new(0.5, -450, 0.5, 0)
     }):Play()
-    task.wait(0.25)
-    ScreenGui.Enabled = false
+    task.wait(0.3)
+    MainGui.Enabled = false
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. ABAS (TABS)
+-- 5. ABAS (TABS)
 -- ═══════════════════════════════════════════════════════════════
 
--- 4.1 TabContainer
 local TabContainer = Instance.new("Frame")
 TabContainer.Name = "TabContainer"
-TabContainer.Size = UDim2.new(1, 0, 0, 44)
-TabContainer.Position = UDim2.new(0, 0, 0, 44)
+TabContainer.Size = UDim2.new(1, -20, 0, 42)
+TabContainer.Position = UDim2.new(0, 10, 0, 54)
 TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
--- 4.2 AutoTab
-local AutoTab = Instance.new("TextButton")
-AutoTab.Name = "AutoTab"
-AutoTab.Size = UDim2.new(0.5, -1, 1, -4)
-AutoTab.Position = UDim2.new(0, 0, 0, 2)
-AutoTab.BackgroundColor3 = COLORS.Frame
-AutoTab.Text = "Auto"
-AutoTab.TextColor3 = COLORS.Text
-AutoTab.TextSize = 14
-AutoTab.Font = Enum.Font.GothamMedium
-AutoTab.Parent = TabContainer
-
-local AutoTabCorner = Instance.new("UICorner")
-AutoTabCorner.CornerRadius = UDim.new(0, 8)
-AutoTabCorner.Parent = AutoTab
-
--- 4.3 RunOnceTab
-local RunOnceTab = Instance.new("TextButton")
-RunOnceTab.Name = "RunOnceTab"
-RunOnceTab.Size = UDim2.new(0.5, -1, 1, -4)
-RunOnceTab.Position = UDim2.new(0.5, 1, 0, 2)
-RunOnceTab.BackgroundColor3 = COLORS.Frame
-RunOnceTab.Text = "Run Once"
-RunOnceTab.TextColor3 = COLORS.Text
-RunOnceTab.TextSize = 14
-RunOnceTab.Font = Enum.Font.GothamMedium
-RunOnceTab.Parent = TabContainer
-
-local RunOnceTabCorner = Instance.new("UICorner")
-RunOnceTabCorner.CornerRadius = UDim.new(0, 8)
-RunOnceTabCorner.Parent = RunOnceTab
-
--- Estado das Abas
+local Tabs = {}
 local ActiveTab = "Auto"
 
--- Função para atualizar abas
-local function UpdateTabs(active)
-    ActiveTab = active
+function CreateTab(name, label)
+    local tab = Instance.new("TextButton")
+    tab.Name = name .. "Tab"
+    tab.Size = UDim2.new(0.5, -4, 1, -4)
+    tab.Position = (name == "Auto") and UDim2.new(0, 0, 0, 2) or UDim2.new(0.5, 4, 0, 2)
+    tab.BackgroundColor3 = (name == "Auto") and Theme.Accent or Theme.Surface
+    tab.Text = label
+    tab.TextColor3 = (name == "Auto") and Theme.Background or Theme.TextSecondary
+    tab.TextSize = 14
+    tab.Font = Enum.Font.GothamMedium
+    tab.BorderSizePixel = 0
+    tab.Parent = TabContainer
     
-    -- AutoTab
-    TweenService:Create(AutoTab, TweenInfo.new(0.2), {
-        BackgroundColor3 = (active == "Auto") and COLORS.Accent or COLORS.Frame,
-        TextColor3 = (active == "Auto") and COLORS.Background or COLORS.Text
-    }):Play()
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 8)
+    tabCorner.Parent = tab
     
-    -- RunOnceTab
-    TweenService:Create(RunOnceTab, TweenInfo.new(0.2), {
-        BackgroundColor3 = (active == "RunOnce") and COLORS.Accent or COLORS.Frame,
-        TextColor3 = (active == "RunOnce") and COLORS.Background or COLORS.Text
-    }):Play()
+    tab.MouseButton1Click:Connect(function()
+        ActiveTab = name
+        for tabName, tabBtn in pairs(Tabs) do
+            local isActive = (tabName == name)
+            TweenService:Create(tabBtn, TweenInfo.new(0.2), {
+                BackgroundColor3 = isActive and Theme.Accent or Theme.Surface,
+                TextColor3 = isActive and Theme.Background or Theme.TextSecondary
+            }):Play()
+        end
+    end)
+    
+    Tabs[name] = tab
+    return tab
 end
 
--- Eventos das Abas
-AutoTab.MouseButton1Click:Connect(function() UpdateTabs("Auto") end)
-RunOnceTab.MouseButton1Click:Connect(function() UpdateTabs("RunOnce") end)
-
--- Inicializar com Auto ativo
-UpdateTabs("Auto")
+CreateTab("Auto", "Auto")
+CreateTab("RunOnce", "Run Once")
 
 -- ═══════════════════════════════════════════════════════════════
--- 5. SEARCH BOX (TEXTBOX)
+-- 6. CAMPO DE BUSCA (TEXTBOX)
 -- ═══════════════════════════════════════════════════════════════
 
--- 5.1 SearchBox Container
-local SearchBox = Instance.new("Frame")
-SearchBox.Name = "SearchBox"
-SearchBox.Size = UDim2.new(1, -20, 0, 38)
-SearchBox.Position = UDim2.new(0, 10, 0, 88)
-SearchBox.BackgroundTransparency = 1
-SearchBox.Parent = MainFrame
+local SearchContainer = Instance.new("Frame")
+SearchContainer.Name = "SearchContainer"
+SearchContainer.Size = UDim2.new(1, -20, 0, 38)
+SearchContainer.Position = UDim2.new(0, 10, 0, 102)
+SearchContainer.BackgroundTransparency = 1
+SearchContainer.Parent = MainFrame
 
--- 5.2 TextBox
-local SearchTextBox = Instance.new("TextBox")
-SearchTextBox.Name = "SearchTextBox"
-SearchTextBox.Size = UDim2.new(0.8, -5, 1, 0)
-SearchTextBox.Position = UDim2.new(0, 0, 0, 0)
-SearchTextBox.BackgroundColor3 = COLORS.SearchBox
-SearchTextBox.Text = ""
-SearchTextBox.PlaceholderText = "Digite algo..."
-SearchTextBox.PlaceholderColor3 = COLORS.TextDim
-SearchTextBox.TextColor3 = COLORS.Text
-SearchTextBox.TextSize = 13
-SearchTextBox.Font = Enum.Font.Gotham
-SearchTextBox.ClearTextOnFocus = false
-SearchTextBox.Parent = SearchBox
+-- Input
+local SearchInput = Instance.new("TextBox")
+SearchInput.Name = "SearchInput"
+SearchInput.Size = UDim2.new(0.78, -6, 1, 0)
+SearchInput.Position = UDim2.new(0, 0, 0, 0)
+SearchInput.BackgroundColor3 = Theme.InputBG
+SearchInput.BorderSizePixel = 0
+SearchInput.Text = ""
+SearchInput.PlaceholderText = "Digite algo..."
+SearchInput.PlaceholderColor3 = Theme.TextMuted
+SearchInput.TextColor3 = Theme.TextPrimary
+SearchInput.TextSize = 13
+SearchInput.Font = Enum.Font.Gotham
+SearchInput.ClearTextOnFocus = false
+SearchInput.Parent = SearchContainer
 
 local SearchCorner = Instance.new("UICorner")
 SearchCorner.CornerRadius = UDim.new(0, 8)
-SearchCorner.Parent = SearchTextBox
+SearchCorner.Parent = SearchInput
 
 local SearchStroke = Instance.new("UIStroke")
-SearchStroke.Color = COLORS.Border
+SearchStroke.Color = Theme.Border
 SearchStroke.Thickness = 1
-SearchStroke.Parent = SearchTextBox
+SearchStroke.Parent = SearchInput
 
--- 5.3 SendButton
-local SendButton = Instance.new("TextButton")
-SendButton.Name = "SendButton"
-SendButton.Size = UDim2.new(0.2, -5, 1, 0)
-SendButton.Position = UDim2.new(0.8, 10, 0, 0)
-SendButton.BackgroundColor3 = COLORS.Accent
-SendButton.Text = "Enviar"
-SendButton.TextColor3 = COLORS.Background
-SendButton.TextSize = 13
-SendButton.Font = Enum.Font.GothamMedium
-SendButton.Parent = SearchBox
+-- Botão Enviar
+local SendBtn = Instance.new("TextButton")
+SendBtn.Name = "SendBtn"
+SendBtn.Size = UDim2.new(0.22, -6, 1, 0)
+SendBtn.Position = UDim2.new(0.78, 10, 0, 0)
+SendBtn.BackgroundColor3 = Theme.Accent
+SendBtn.Text = "Enviar"
+SendBtn.TextColor3 = Theme.Background
+SendBtn.TextSize = 13
+SendBtn.Font = Enum.Font.GothamMedium
+SendBtn.BorderSizePixel = 0
+SendBtn.Parent = SearchContainer
 
 local SendCorner = Instance.new("UICorner")
 SendCorner.CornerRadius = UDim.new(0, 8)
-SendCorner.Parent = SendButton
+SendCorner.Parent = SendBtn
 
--- Tween para SendButton
-SendButton.MouseEnter:Connect(function()
-    TweenService:Create(SendButton, TweenInfo.new(0.15), {
-        BackgroundColor3 = COLORS.AccentHover
+SendBtn.MouseEnter:Connect(function()
+    TweenService:Create(SendBtn, TweenInfo.new(0.15), {
+        BackgroundColor3 = Theme.AccentHover
     }):Play()
 end)
 
-SendButton.MouseLeave:Connect(function()
-    TweenService:Create(SendButton, TweenInfo.new(0.15), {
-        BackgroundColor3 = COLORS.Accent
+SendBtn.MouseLeave:Connect(function()
+    TweenService:Create(SendBtn, TweenInfo.new(0.15), {
+        BackgroundColor3 = Theme.Accent
     }):Play()
 end)
 
-SendButton.MouseButton1Click:Connect(function()
-    local text = SearchTextBox.Text
-    if text ~= "" then
-        print("[Car Flipper] Enviado:", text)
-        SearchTextBox.Text = ""
-        -- Aqui você pode adicionar a lógica para processar o texto
+SendBtn.MouseButton1Click:Connect(function()
+    if SearchInput.Text ~= "" then
+        print("[Car Flipper] Busca:", SearchInput.Text)
+        SearchInput.Text = ""
     end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 6. STATUS LABEL
+-- 7. STATUS
 -- ═══════════════════════════════════════════════════════════════
 
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, -20, 0, 24)
-StatusLabel.Position = UDim2.new(0, 10, 0, 132)
+StatusLabel.Position = UDim2.new(0, 12, 0, 148)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "[Car Flipper] Idle"
-StatusLabel.TextColor3 = COLORS.Text
+StatusLabel.Text = "⏳ [Car Flipper] Idle"
+StatusLabel.TextColor3 = Theme.TextSecondary
 StatusLabel.TextSize = 13
 StatusLabel.Font = Enum.Font.GothamMedium
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -341,263 +297,382 @@ StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
 StatusLabel.Parent = MainFrame
 
 -- ═══════════════════════════════════════════════════════════════
--- 7. DIVISOR DE SEÇÃO
+-- 8. CONTAINER DE CONTEÚDO (HORIZONTAL - LAYOUT EM GRID)
 -- ═══════════════════════════════════════════════════════════════
 
-local function CreateDivider(yPosition)
-    local Divider = Instance.new("Frame")
-    Divider.Name = "Divider"
-    Divider.Size = UDim2.new(0.9, 0, 0, 1)
-    Divider.Position = UDim2.new(0.05, 0, 0, yPosition)
-    Divider.BackgroundColor3 = COLORS.Divider
-    Divider.BackgroundTransparency = 0
-    Divider.BorderSizePixel = 0
-    Divider.Parent = MainFrame
-    return Divider
-end
+-- Container principal para as seções (layout horizontal)
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Name = "ContentContainer"
+ContentContainer.Size = UDim2.new(1, -20, 1, -190)
+ContentContainer.Position = UDim2.new(0, 10, 0, 180)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.ClipsDescendants = true
+ContentContainer.Parent = MainFrame
 
-local function CreateSectionTitle(title, yPosition)
-    local Label = Instance.new("TextLabel")
-    Label.Name = "SectionTitle"
-    Label.Size = UDim2.new(0.9, 0, 0, 22)
-    Label.Position = UDim2.new(0.05, 0, 0, yPosition)
-    Label.BackgroundTransparency = 1
-    Label.Text = title
-    Label.TextColor3 = COLORS.TextDim
-    Label.TextSize = 12
-    Label.Font = Enum.Font.GothamBold
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.TextYAlignment = Enum.TextYAlignment.Center
-    Label.Parent = MainFrame
-    return Label
-end
+-- Canvas para scroll (se necessário)
+local Canvas = Instance.new("Frame")
+Canvas.Name = "Canvas"
+Canvas.Size = UDim2.new(1, 0, 0, 0)
+Canvas.BackgroundTransparency = 1
+Canvas.Parent = ContentContainer
 
 -- ═══════════════════════════════════════════════════════════════
--- 8. CHECKBOX COMPONENT
+-- 9. SISTEMA DE CHECKBOX PERSONALIZADO
 -- ═══════════════════════════════════════════════════════════════
 
-local function CreateCheckbox(name, label, xPosition, yPosition, parent)
-    local Container = Instance.new("Frame")
-    Container.Name = name
-    Container.Size = UDim2.new(0.45, -10, 0, 28)
-    Container.Position = UDim2.new(xPosition, 0, 0, yPosition)
-    Container.BackgroundTransparency = 1
-    Container.Parent = parent
+local Checkboxes = {}
+
+function CreateCheckbox(parent, name, label, xPos, yPos)
+    local container = Instance.new("Frame")
+    container.Name = name
+    container.Size = UDim2.new(0, 160, 0, 28)  -- Largura fixa para horizontal
+    container.Position = UDim2.new(xPos, 0, 0, yPos)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
     
     -- Checkbox BG
-    local CheckboxBG = Instance.new("Frame")
-    CheckboxBG.Name = "CheckboxBG"
-    CheckboxBG.Size = UDim2.new(0, 18, 0, 18)
-    CheckboxBG.Position = UDim2.new(0, 0, 0.5, -9)
-    CheckboxBG.BackgroundColor3 = COLORS.CheckboxBG
-    CheckboxBG.Parent = Container
+    local checkBG = Instance.new("Frame")
+    checkBG.Name = "CheckBG"
+    checkBG.Size = UDim2.new(0, 20, 0, 20)
+    checkBG.Position = UDim2.new(0, 0, 0.5, -10)
+    checkBG.BackgroundColor3 = Theme.CheckboxBG
+    checkBG.BorderSizePixel = 0
+    checkBG.Parent = container
     
-    local CheckboxCorner = Instance.new("UICorner")
-    CheckboxCorner.CornerRadius = UDim.new(0, 4)
-    CheckboxCorner.Parent = CheckboxBG
+    local checkCorner = Instance.new("UICorner")
+    checkCorner.CornerRadius = UDim.new(0, 5)
+    checkCorner.Parent = checkBG
     
-    -- Check Icon (invisível inicialmente)
-    local CheckIcon = Instance.new("TextLabel")
-    CheckIcon.Name = "CheckIcon"
-    CheckIcon.Size = UDim2.new(1, 0, 1, 0)
-    CheckIcon.BackgroundTransparency = 1
-    CheckIcon.Text = "✓"
-    CheckIcon.TextColor3 = COLORS.Background
-    CheckIcon.TextSize = 14
-    CheckIcon.Font = Enum.Font.GothamBold
-    CheckIcon.TextYAlignment = Enum.TextYAlignment.Center
-    CheckIcon.TextXAlignment = Enum.TextXAlignment.Center
-    CheckIcon.Visible = false
-    CheckIcon.Parent = CheckboxBG
+    local checkStroke = Instance.new("UIStroke")
+    checkStroke.Color = Theme.Border
+    checkStroke.Thickness = 1
+    checkStroke.Parent = checkBG
+    
+    -- Ícone de Check
+    local checkIcon = Instance.new("TextLabel")
+    checkIcon.Name = "CheckIcon"
+    checkIcon.Size = UDim2.new(1, 0, 1, 0)
+    checkIcon.BackgroundTransparency = 1
+    checkIcon.Text = "✓"
+    checkIcon.TextColor3 = Theme.Background
+    checkIcon.TextSize = 16
+    checkIcon.Font = Enum.Font.GothamBold
+    checkIcon.TextXAlignment = Enum.TextXAlignment.Center
+    checkIcon.TextYAlignment = Enum.TextYAlignment.Center
+    checkIcon.Visible = false
+    checkIcon.Parent = checkBG
     
     -- Label
-    local Label = Instance.new("TextLabel")
-    Label.Name = "Label"
-    Label.Size = UDim2.new(1, -24, 1, 0)
-    Label.Position = UDim2.new(0, 24, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = label
-    Label.TextColor3 = COLORS.Text
-    Label.TextSize = 13
-    Label.Font = Enum.Font.Gotham
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.TextYAlignment = Enum.TextYAlignment.Center
-    Label.Parent = Container
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Size = UDim2.new(1, -26, 1, 0)
+    label.Position = UDim2.new(0, 26, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = label
+    label.TextColor3 = Theme.TextPrimary
+    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextYAlignment = Enum.TextYAlignment.Center
+    label.Parent = container
     
     -- Estado
-    local checked = false
+    local state = {
+        checked = false,
+        container = container,
+        checkBG = checkBG,
+        checkIcon = checkIcon,
+        label = label
+    }
     
-    -- Função para alternar
-    local function Toggle()
-        checked = not checked
-        if checked then
-            TweenService:Create(CheckboxBG, TweenInfo.new(0.15), {
-                BackgroundColor3 = COLORS.CheckboxChecked
+    function state:Toggle()
+        self.checked = not self.checked
+        if self.checked then
+            TweenService:Create(self.checkBG, TweenInfo.new(0.15), {
+                BackgroundColor3 = Theme.CheckboxChecked
             }):Play()
-            CheckIcon.Visible = true
+            self.checkIcon.Visible = true
         else
-            TweenService:Create(CheckboxBG, TweenInfo.new(0.15), {
-                BackgroundColor3 = COLORS.CheckboxBG
+            TweenService:Create(self.checkBG, TweenInfo.new(0.15), {
+                BackgroundColor3 = Theme.CheckboxBG
             }):Play()
-            CheckIcon.Visible = false
+            self.checkIcon.Visible = false
         end
     end
     
-    -- Eventos
-    Container.MouseButton1Click:Connect(Toggle)
-    CheckboxBG.MouseButton1Click:Connect(Toggle)
-    Label.MouseButton1Click:Connect(Toggle)
+    -- Eventos de clique
+    container.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            state:Toggle()
+        end
+    end)
     
     -- Hover
-    Container.MouseEnter:Connect(function()
-        TweenService:Create(Label, TweenInfo.new(0.15), {
-            TextColor3 = COLORS.Accent
+    container.MouseEnter:Connect(function()
+        TweenService:Create(label, TweenInfo.new(0.15), {
+            TextColor3 = Theme.Accent
         }):Play()
     end)
     
-    Container.MouseLeave:Connect(function()
-        TweenService:Create(Label, TweenInfo.new(0.15), {
-            TextColor3 = COLORS.Text
-        }):Play()
+    container.MouseLeave:Connect(function()
+        if not state.checked then
+            TweenService:Create(label, TweenInfo.new(0.15), {
+                TextColor3 = Theme.TextPrimary
+            }):Play()
+        end
     end)
     
-    return Container, Toggle
+    Checkboxes[name] = state
+    return state
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 9. SEÇÃO BASE
+-- 10. FUNÇÃO PARA CRIAR SEÇÕES (HORIZONTAL)
 -- ═══════════════════════════════════════════════════════════════
 
-local baseY = 160
+local sectionY = 0
+local sectionSpacing = 20
 
--- Divisor
-CreateDivider(baseY)
+function CreateSection(title, items)
+    -- Container da seção (retângulo horizontal)
+    local sectionContainer = Instance.new("Frame")
+    sectionContainer.Name = title:gsub("─", ""):gsub(" ", "") .. "Section"
+    sectionContainer.Size = UDim2.new(0, 280, 0, 0)
+    sectionContainer.Position = UDim2.new(0, 0, 0, sectionY)
+    sectionContainer.BackgroundColor3 = Theme.Surface
+    sectionContainer.BackgroundTransparency = 0
+    sectionContainer.BorderSizePixel = 0
+    sectionContainer.Parent = Canvas
+    
+    local sectionCorner = Instance.new("UICorner")
+    sectionCorner.CornerRadius = UDim.new(0, 10)
+    sectionCorner.Parent = sectionContainer
+    
+    local sectionStroke = Instance.new("UIStroke")
+    sectionStroke.Color = Theme.Border
+    sectionStroke.Thickness = 1
+    sectionStroke.Parent = sectionContainer
+    
+    -- Título da seção
+    local sectionTitle = Instance.new("TextLabel")
+    sectionTitle.Name = "Title"
+    sectionTitle.Size = UDim2.new(1, -16, 0, 32)
+    sectionTitle.Position = UDim2.new(0, 8, 0, 4)
+    sectionTitle.BackgroundTransparency = 1
+    sectionTitle.Text = title
+    sectionTitle.TextColor3 = Theme.TextMuted
+    sectionTitle.TextSize = 12
+    sectionTitle.Font = Enum.Font.GothamBold
+    sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+    sectionTitle.TextYAlignment = Enum.TextYAlignment.Center
+    sectionTitle.Parent = sectionContainer
+    
+    -- Divider
+    local divider = Instance.new("Frame")
+    divider.Name = "Divider"
+    divider.Size = UDim2.new(0.9, 0, 0, 1)
+    divider.Position = UDim2.new(0.05, 0, 0, 40)
+    divider.BackgroundColor3 = Theme.Divider
+    divider.BorderSizePixel = 0
+    divider.Parent = sectionContainer
+    
+    -- Criar checkboxes em grid horizontal
+    local startX = 8
+    local startY = 48
+    local itemsPerRow = 1
+    local currentX = startX
+    local currentY = startY
+    local maxWidth = 0
+    
+    for i, item in ipairs(items) do
+        -- Calcular posição (vertical em colunas)
+        local col = math.floor((i - 1) / 4)  -- 4 itens por coluna
+        local row = (i - 1) % 4
+        
+        local xPos = currentX + (col * 130)
+        local yPos = currentY + (row * 30)
+        
+        CreateCheckbox(sectionContainer, item.name, item.label, 0, yPos)
+        maxWidth = math.max(maxWidth, xPos + 160)
+    end
+    
+    -- Ajustar tamanho do container baseado no conteúdo
+    local totalHeight = startY + (math.min(#items, 4) * 30) + 16
+    sectionContainer.Size = UDim2.new(0, math.max(maxWidth + 16, 160), 0, totalHeight)
+    
+    -- Atualizar Y para próxima seção
+    sectionY = sectionY + totalHeight + sectionSpacing
+    
+    return sectionContainer
+end
 
--- Título
-CreateSectionTitle("──────── Base ────────", baseY + 8)
+-- ═══════════════════════════════════════════════════════════════
+-- 11. DEFINIÇÃO DOS DADOS DAS SEÇÕES
+-- ═══════════════════════════════════════════════════════════════
 
--- Checkboxes da Base (2 colunas)
-local baseItems = {
-    {name = "ClaimCash", label = "Claim Cash"},
-    {name = "ClaimParts", label = "Claim Parts"},
-    {name = "BuyUpgrades", label = "Buy Upgrades"},
-    {name = "ClaimContainers", label = "Claim Containers"},
-    {name = "OpenContainers", label = "Open Containers"},
-    {name = "ClaimQuests", label = "Claim Quests"},
-    {name = "DeliverJunk", label = "Deliver Junk"},
+local SectionsData = {
+    {
+        title = "──────── Base ────────",
+        items = {
+            {name = "ClaimCash", label = "Claim Cash"},
+            {name = "ClaimParts", label = "Claim Parts"},
+            {name = "BuyUpgrades", label = "Buy Upgrades"},
+            {name = "ClaimContainers", label = "Claim Containers"},
+            {name = "OpenContainers", label = "Open Containers"},
+            {name = "ClaimQuests", label = "Claim Quests"},
+            {name = "DeliverJunk", label = "Deliver Junk"},
+        }
+    },
+    {
+        title = "──────── Cars ────────",
+        items = {
+            {name = "FixCars", label = "Fix Cars"},
+            {name = "SellFixedCars", label = "Sell Fixed Cars"},
+            {name = "UpdateStands", label = "Update Stands"},
+            {name = "BuyFixSellCheapest", label = "Buy, Fix, Sell Cheapest"},
+        }
+    },
+    {
+        title = "──────── Rewards ────────",
+        items = {
+            {name = "ClaimPlaytimeRewards", label = "Claim Playtime Rewards"},
+            {name = "ClaimDailyRewards", label = "Claim Daily Rewards"},
+        }
+    }
 }
 
-for i, item in ipairs(baseItems) do
-    local col = (i % 2 == 1) and 0 or 0.5
-    local row = math.floor((i - 1) / 2)
-    local yPos = baseY + 35 + (row * 30)
-    CreateCheckbox(item.name, item.label, col, yPos, MainFrame)
+-- ═══════════════════════════════════════════════════════════════
+-- 12. CONSTRUÇÃO DAS SEÇÕES (LAYOUT HORIZONTAL)
+-- ═══════════════════════════════════════════════════════════════
+
+-- Posicionar as seções horizontalmente (uma ao lado da outra)
+local totalSections = #SectionsData
+local sectionWidth = 280  -- Largura de cada seção
+local spacing = 20
+local totalWidth = (totalSections * sectionWidth) + ((totalSections - 1) * spacing)
+
+-- Ajustar Canvas para acomodar todas as seções horizontalmente
+local canvasWidth = math.max(totalWidth, 860)  -- Mínimo 860px
+Canvas.Size = UDim2.new(0, canvasWidth, 0, 340)
+
+-- Criar cada seção com posição horizontal
+for i, sectionData in ipairs(SectionsData) do
+    local xPos = (i - 1) * (sectionWidth + spacing)
+    
+    -- Container da seção
+    local sectionContainer = Instance.new("Frame")
+    sectionContainer.Name = sectionData.title:gsub("─", ""):gsub(" ", "") .. "Section"
+    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, 0)
+    sectionContainer.Position = UDim2.new(0, xPos, 0, 0)
+    sectionContainer.BackgroundColor3 = Theme.Surface
+    sectionContainer.BackgroundTransparency = 0
+    sectionContainer.BorderSizePixel = 0
+    sectionContainer.Parent = Canvas
+    
+    local sectionCorner = Instance.new("UICorner")
+    sectionCorner.CornerRadius = UDim.new(0, 10)
+    sectionCorner.Parent = sectionContainer
+    
+    local sectionStroke = Instance.new("UIStroke")
+    sectionStroke.Color = Theme.Border
+    sectionStroke.Thickness = 1
+    sectionStroke.Parent = sectionContainer
+    
+    -- Título da seção
+    local sectionTitle = Instance.new("TextLabel")
+    sectionTitle.Name = "Title"
+    sectionTitle.Size = UDim2.new(1, -16, 0, 32)
+    sectionTitle.Position = UDim2.new(0, 8, 0, 4)
+    sectionTitle.BackgroundTransparency = 1
+    sectionTitle.Text = sectionData.title
+    sectionTitle.TextColor3 = Theme.TextMuted
+    sectionTitle.TextSize = 12
+    sectionTitle.Font = Enum.Font.GothamBold
+    sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+    sectionTitle.TextYAlignment = Enum.TextYAlignment.Center
+    sectionTitle.Parent = sectionContainer
+    
+    -- Divider
+    local divider = Instance.new("Frame")
+    divider.Name = "Divider"
+    divider.Size = UDim2.new(0.9, 0, 0, 1)
+    divider.Position = UDim2.new(0.05, 0, 0, 40)
+    divider.BackgroundColor3 = Theme.Divider
+    divider.BorderSizePixel = 0
+    divider.Parent = sectionContainer
+    
+    -- Criar checkboxes em layout vertical
+    local startY = 48
+    local itemsPerColumn = 6  -- Máximo de itens por coluna
+    
+    for i, item in ipairs(sectionData.items) do
+        local row = i - 1
+        local yPos = startY + (row * 30)
+        
+        CreateCheckbox(sectionContainer, item.name, item.label, 0, yPos)
+    end
+    
+    -- Ajustar altura do container
+    local totalHeight = startY + (#sectionData.items * 30) + 16
+    sectionContainer.Size = UDim2.new(0, sectionWidth, 0, totalHeight)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 10. SEÇÃO CARS
+-- 13. SISTEMA DE ARRASTAR
 -- ═══════════════════════════════════════════════════════════════
 
-local carsY = baseY + 155
+local Dragging = false
+local DragStart = Vector2.new()
+local StartPos = UDim2.new()
 
--- Divisor
-CreateDivider(carsY)
-
--- Título
-CreateSectionTitle("──────── Cars ────────", carsY + 8)
-
--- Checkboxes da Cars
-local carsItems = {
-    {name = "FixCars", label = "Fix Cars"},
-    {name = "SellFixedCars", label = "Sell Fixed Cars"},
-    {name = "UpdateStands", label = "Update Stands"},
-    {name = "BuyFixSellCheapest", label = "Buy, Fix, Sell Cheapest"},
-}
-
-for i, item in ipairs(carsItems) do
-    local col = (i % 2 == 1) and 0 or 0.5
-    local row = math.floor((i - 1) / 2)
-    local yPos = carsY + 35 + (row * 30)
-    CreateCheckbox(item.name, item.label, col, yPos, MainFrame)
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 11. SEÇÃO REWARDS
--- ═══════════════════════════════════════════════════════════════
-
-local rewardsY = carsY + 100
-
--- Divisor
-CreateDivider(rewardsY)
-
--- Título
-CreateSectionTitle("──────── Rewards ────────", rewardsY + 8)
-
--- Checkboxes da Rewards
-local rewardsItems = {
-    {name = "ClaimPlaytimeRewards", label = "Claim Playtime Rewards"},
-    {name = "ClaimDailyRewards", label = "Claim Daily Rewards"},
-}
-
-for i, item in ipairs(rewardsItems) do
-    local col = (i % 2 == 1) and 0 or 0.5
-    local row = math.floor((i - 1) / 2)
-    local yPos = rewardsY + 35 + (row * 30)
-    CreateCheckbox(item.name, item.label, col, yPos, MainFrame)
-end
-
--- ═══════════════════════════════════════════════════════════════
--- 12. FUNCIONALIDADE ARRASTÁVEL (DRAGGABLE)
--- ═══════════════════════════════════════════════════════════════
-
-local dragging = false
-local dragStart = Vector2.new()
-local startPos = UDim2.new()
-
-TitleBar.MouseButton1Down:Connect(function(input)
-    dragging = true
-    dragStart = input.Position
-    startPos = MainFrame.Position
-    TitleBar.BackgroundTransparency = 0.1
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        Dragging = true
+        DragStart = input.Position
+        StartPos = MainFrame.Position
+        TweenService:Create(TitleBar, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0.1
+        }):Play()
+    end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if dragging then
-            dragging = false
-            TitleBar.BackgroundTransparency = 0
-        end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and Dragging then
+        Dragging = false
+        TweenService:Create(TitleBar, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0
+        }):Play()
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
+    if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - DragStart
         MainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
+            StartPos.X.Scale,
+            StartPos.X.Offset + delta.X,
+            StartPos.Y.Scale,
+            StartPos.Y.Offset + delta.Y
         )
     end
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 13. ANIMAÇÃO DE ENTRADA
+-- 14. ANIMAÇÃO DE ENTRADA
 -- ═══════════════════════════════════════════════════════════════
 
-MainFrame.Size = UDim2.new(0, 420, 0, 0)
-MainFrame.Position = UDim2.new(0.5, -210, 0.5, 0)
+MainFrame.Size = UDim2.new(0, 900, 0, 0)
+MainFrame.Position = UDim2.new(0.5, -450, 0.5, 0)
 
 task.wait(0.1)
 
-TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 420, 0, 580),
-    Position = UDim2.new(0.5, -210, 0.5, -290)
+TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 900, 0, 520),
+    Position = UDim2.new(0.5, -450, 0.5, -260)
 }):Play()
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. EXPORTAÇÃO DE FUNÇÕES (Para uso externo)
+-- 15. API PÚBLICA
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
@@ -605,44 +680,83 @@ local CarFlipperAPI = {
         return StatusLabel.Text
     end,
     SetStatus = function(text)
-        StatusLabel.Text = text
+        StatusLabel.Text = "⏳ " .. text
     end,
-    GetCheckboxState = function(name)
-        -- Implementar se necessário
+    SetIdle = function()
+        StatusLabel.Text = "⏳ [Car Flipper] Idle"
+    end,
+    
+    GetCheckbox = function(name)
+        return Checkboxes[name]
     end,
     ToggleCheckbox = function(name)
-        -- Implementar se necessário
+        local cb = Checkboxes[name]
+        if cb then cb:Toggle() end
     end,
+    IsChecked = function(name)
+        local cb = Checkboxes[name]
+        return cb and cb.checked or false
+    end,
+    GetAllStates = function()
+        local states = {}
+        for name, cb in pairs(Checkboxes) do
+            states[name] = cb.checked
+        end
+        return states
+    end,
+    
     GetSearchText = function()
-        return SearchTextBox.Text
+        return SearchInput.Text
     end,
     SetSearchText = function(text)
-        SearchTextBox.Text = text
+        SearchInput.Text = text
     end,
-    SetTab = function(tab)
-        if tab == "Auto" or tab == "RunOnce" then
-            UpdateTabs(tab)
-        end
+    ClearSearch = function()
+        SearchInput.Text = ""
     end,
+    
     GetActiveTab = function()
         return ActiveTab
     end,
-    Close = function()
-        CloseButton.MouseButton1Click:Fire()
+    SetActiveTab = function(tab)
+        if Tabs[tab] then
+            Tabs[tab].MouseButton1Click:Fire()
+        end
     end,
+    
     Show = function()
-        ScreenGui.Enabled = true
-        MainFrame.Size = UDim2.new(0, 420, 0, 0)
-        MainFrame.Position = UDim2.new(0.5, -210, 0.5, 0)
+        MainGui.Enabled = true
+        MainFrame.Size = UDim2.new(0, 900, 0, 0)
+        MainFrame.Position = UDim2.new(0.5, -450, 0.5, 0)
         task.wait(0.1)
-        TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 420, 0, 580),
-            Position = UDim2.new(0.5, -210, 0.5, -290)
+        TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 900, 0, 520),
+            Position = UDim2.new(0.5, -450, 0.5, -260)
         }):Play()
-    end
+    end,
+    Hide = function()
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+            Size = UDim2.new(0, 900, 0, 0),
+            Position = UDim2.new(0.5, -450, 0.5, 0)
+        }):Play()
+        task.wait(0.3)
+        MainGui.Enabled = false
+    end,
+    Toggle = function()
+        if MainGui.Enabled then
+            CarFlipperAPI.Hide()
+        else
+            CarFlipperAPI.Show()
+        end
+    end,
 }
 
--- Armazenar no _G para acesso global
 _G.CarFlipper = CarFlipperAPI
 
-print("✓ Car Flipper - GomezXitado carregado com sucesso!")
+-- ═══════════════════════════════════════════════════════════════
+-- 16. FINALIZAÇÃO
+-- ═══════════════════════════════════════════════════════════════
+
+print("✅ Car Flipper - GomezXitado carregado com sucesso!")
+print("📐 Layout Horizontal - Retangular")
+print("📌 Use _G.CarFlipper para controlar a interface")
