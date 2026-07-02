@@ -2,8 +2,7 @@
     ═══════════════════════════════════════════════════════════════
     CAR FLIPPER - GOMEZXITADO
     Interface Premium com Layout Horizontal
-    BOTÃO ARRASTÁVEL PARA QUALQUER LUGAR
-    PAINEL DO TAMANHO DESEJADO
+    BOTÃO ARRASTÁVEL E CLICÁVEL - CORRIGIDO
     ═══════════════════════════════════════════════════════════════
 --]]
 
@@ -110,7 +109,7 @@ function ClockSystem:Update()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 4. BOTÃO FLUTUANTE - ARRASTÁVEL PARA QUALQUER LUGAR
+-- 4. BOTÃO FLUTUANTE - ARRASTÁVEL E CLICÁVEL (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
 local ToggleGui = Instance.new("ScreenGui")
@@ -170,61 +169,76 @@ TooltipCorner.CornerRadius = UDim.new(0, 6)
 TooltipCorner.Parent = Tooltip
 
 -- ═══════════════════════════════════════════════════════════════
--- 4.1 SISTEMA DE ARRASTAR DO BOTÃO - PARA QUALQUER LUGAR
+-- 4.1 SISTEMA DE ARRASTAR DO BOTÃO (CORRIGIDO)
 -- ═══════════════════════════════════════════════════════════════
 
 local isDraggingButton = false
+local isDraggingStarted = false
 local dragButtonStart = Vector2.new()
 local buttonStartPos = UDim2.new()
-local screenSize = Instance.new("ScreenGui").AbsoluteSize
+local mouseDownPos = Vector2.new()
+local mouseUpPos = Vector2.new()
+local dragThreshold = 5 -- Distância mínima para considerar arrasto
 
--- Função para limitar posição dentro da tela
-local function clampPosition(pos)
-    local maxX = 100 -- Margem direita
-    local maxY = 100 -- Margem inferior
-    return pos
-end
-
-ToggleButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        -- Verifica se não foi um clique (arrastar)
-        isDraggingButton = true
-        dragButtonStart = input.Position
-        buttonStartPos = ToggleButton.Position
-        
-        -- Esconde tooltip durante arrasto
-        Tooltip.Visible = false
-    end
+-- Detectar quando o mouse pressiona o botão
+ToggleButton.MouseButton1Down:Connect(function(input)
+    mouseDownPos = input.Position
+    isDraggingButton = true
+    isDraggingStarted = false
+    dragButtonStart = input.Position
+    buttonStartPos = ToggleButton.Position
+    
+    -- Efeito de clique
+    TweenService:Create(ToggleButton, TweenInfo.new(0.08), {
+        Size = UDim2.new(0, 32, 0, 32)
+    }):Play()
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and isDraggingButton then
-        isDraggingButton = false
-    end
-end)
-
+-- Detectar movimento do mouse
 UserInputService.InputChanged:Connect(function(input)
     if isDraggingButton and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragButtonStart
+        local delta = (input.Position - dragButtonStart).Magnitude
         
-        -- Calcula nova posição
-        local newX = buttonStartPos.X.Offset + delta.X
-        local newY = buttonStartPos.Y.Offset + delta.Y
-        
-        -- Limita para não sair da tela (com margens)
-        local screenX = ToggleGui.AbsoluteSize.X
-        local screenY = ToggleGui.AbsoluteSize.Y
-        local buttonSize = 36
-        
-        newX = math.max(0, math.min(newX, screenX - buttonSize - 10))
-        newY = math.max(0, math.min(newY, screenY - buttonSize - 50))
-        
-        -- Aplica nova posição
-        ToggleButton.Position = UDim2.new(0, newX, 0, newY)
+        -- Se moveu mais que o threshold, considera como arrasto
+        if delta > dragThreshold then
+            isDraggingStarted = true
+            
+            local newX = buttonStartPos.X.Offset + (input.Position.X - dragButtonStart.X)
+            local newY = buttonStartPos.Y.Offset + (input.Position.Y - dragButtonStart.Y)
+            
+            -- Limita dentro da tela
+            local screenX = ToggleGui.AbsoluteSize.X
+            local screenY = ToggleGui.AbsoluteSize.Y
+            local buttonSize = 36
+            
+            newX = math.max(0, math.min(newX, screenX - buttonSize - 10))
+            newY = math.max(0, math.min(newY, screenY - buttonSize - 50))
+            
+            ToggleButton.Position = UDim2.new(0, newX, 0, newY)
+        end
     end
 end)
 
--- Efeitos do botão (hover)
+-- Detectar quando solta o mouse
+ToggleButton.MouseButton1Up:Connect(function(input)
+    mouseUpPos = input.Position
+    
+    -- Efeito de soltar
+    TweenService:Create(ToggleButton, TweenInfo.new(0.08), {
+        Size = UDim2.new(0, 36, 0, 36)
+    }):Play()
+    
+    -- Se não arrastou, é um clique
+    if not isDraggingStarted then
+        -- É um clique! Executa o toggle
+        ToggleGUI()
+    end
+    
+    isDraggingButton = false
+    isDraggingStarted = false
+end)
+
+-- Efeitos hover
 ToggleButton.MouseEnter:Connect(function()
     if not isDraggingButton then
         TweenService:Create(ToggleButton, TweenInfo.new(0.15), {
@@ -252,23 +266,6 @@ ToggleButton.MouseLeave:Connect(function()
     end
 end)
 
--- Efeito de clique
-ToggleButton.MouseButton1Down:Connect(function()
-    if not isDraggingButton then
-        TweenService:Create(ToggleButton, TweenInfo.new(0.08), {
-            Size = UDim2.new(0, 32, 0, 32)
-        }):Play()
-    end
-end)
-
-ToggleButton.MouseButton1Up:Connect(function()
-    if not isDraggingButton then
-        TweenService:Create(ToggleButton, TweenInfo.new(0.08), {
-            Size = UDim2.new(0, 36, 0, 36)
-        }):Play()
-    end
-end)
-
 -- ═══════════════════════════════════════════════════════════════
 -- 5. CRIAÇÃO DA INTERFACE PRINCIPAL
 -- ═══════════════════════════════════════════════════════════════
@@ -278,10 +275,9 @@ MainGui.Name = "CarFlipperGUI"
 MainGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MainGui.ResetOnSpawn = false
 
--- MainFrame - TAMANHO AJUSTADO
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 920, 0, 560) -- Tamanho ajustado
+MainFrame.Size = UDim2.new(0, 920, 0, 560)
 MainFrame.Position = UDim2.new(0.5, -460, 0.5, -280)
 MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.BorderSizePixel = 0
@@ -723,17 +719,7 @@ function ToggleGUI()
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- 14. EVENTO DO BOTÃO
--- ═══════════════════════════════════════════════════════════════
-
-ToggleButton.MouseButton1Click:Connect(function()
-    if not isDraggingButton then
-        ToggleGUI()
-    end
-end)
-
--- ═══════════════════════════════════════════════════════════════
--- 15. ATALHO DE TECLADO
+-- 14. ATALHO DE TECLADO
 -- ═══════════════════════════════════════════════════════════════
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -745,7 +731,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 16. ATUALIZAÇÃO DO RELÓGIO
+-- 15. ATUALIZAÇÃO DO RELÓGIO
 -- ═══════════════════════════════════════════════════════════════
 
 function UpdateClock()
@@ -769,7 +755,7 @@ spawn(function()
 end)
 
 -- ═══════════════════════════════════════════════════════════════
--- 17. API PÚBLICA
+-- 16. API PÚBLICA
 -- ═══════════════════════════════════════════════════════════════
 
 local CarFlipperAPI = {
@@ -826,7 +812,7 @@ local CarFlipperAPI = {
 _G.CarFlipper = CarFlipperAPI
 
 -- ═══════════════════════════════════════════════════════════════
--- 18. FINALIZAÇÃO
+-- 17. FINALIZAÇÃO
 -- ═══════════════════════════════════════════════════════════════
 
 print("╔═══════════════════════════════════════════════════════════╗")
@@ -834,8 +820,8 @@ print("║     🚗 CAR FLIPPER - GOMEZXITADO CARREGADO!              ║")
 print("║                                                           ║")
 print("║  ✅ Interface aberta automaticamente                      ║")
 print("║  📌 Botão preto no canto superior direito                 ║")
-print("║  🖱️  Botão ARRASTÁVEL para QUALQUER lugar da tela        ║")
-print("║  🔄 Clique INFINITAS vezes para abrir/fechar             ║")
+print("║  🖱️  Clique para ABRIR/FECHAR - Arraste para MOVER       ║")
+print("║  🔄 Funciona INFINITAS vezes                             ║")
 print("║  ⌨️  Tecla 'C' para abrir/fechar (opcional)              ║")
 print("║                                                           ║")
 print("║  📌 Use _G.CarFlipper para controlar a interface         ║")
